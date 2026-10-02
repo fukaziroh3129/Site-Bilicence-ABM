@@ -1,0 +1,61 @@
+:root{
+/* ---- Registre principal — institutionnel (charte §1) ---- */
+--abm-bordeaux:#5C1A1E;
+--abm-bordeaux-rose:#B85C5F;
+--abm-white:#FFFFFF;
+
+/* ---- Registre secondaire — accueil / chaleureux (charte §1) ---- */
+--abm-rose-pale:#F2D9D9;
+--abm-beige-papier:#EDE3D3;
+
+/* ---- Échelle bordeaux dérivée (interpolée depuis #5C1A1E / #B85C5F) ---- */
+--abm-bordeaux-900:#2B0D0F;
+--abm-bordeaux-800:#431316;
+--abm-bordeaux-700:#5C1A1E;
+--abm-bordeaux-600:#74282C;
+--abm-bordeaux-500:#8E3A3E;
+--abm-bordeaux-400:#B85C5F;
+--abm-bordeaux-300:#D08D8F;
+--abm-bordeaux-200:#E6BDBE;
+--abm-bordeaux-100:#F2D9D9;
+
+/* ---- Neutres papier ---- */
+--abm-ink:#2B0D0F;
+--abm-ink-soft:#5A4446;
+--abm-paper:#FDFBF8;
+--abm-paper-warm:#EDE3D3;
+--abm-hairline:rgba(92,26,30,.22);
+--abm-hairline-inverse:rgba(255,255,255,.45);
+
+/* ---- Sémantiques : surfaces ---- */
+--surface-institutional:var(--abm-bordeaux);
+--surface-institutional-deep:var(--abm-bordeaux-900);
+--surface-welcome:var(--abm-rose-pale);
+--surface-letter:var(--abm-beige-papier);
+--surface-page:var(--abm-paper);
+--surface-card:var(--abm-white);
+--surface-card-inverse:rgba(255,255,255,.07);
+
+/* ---- Sémantiques : texte ---- */
+--text-body:var(--abm-ink);
+--text-muted:var(--abm-ink-soft);
+--text-on-bordeaux:var(--abm-white);
+--text-on-bordeaux-muted:rgba(255,255,255,.76);
+--text-heading:var(--abm-bordeaux-700);
+--text-link:var(--abm-bordeaux-700);
+--text-link-hover:var(--abm-bordeaux-500);
+
+/* ---- Sémantiques : bordures et traits ---- */
+--border-hairline:1px solid var(--abm-hairline);
+--border-frame:1px solid var(--abm-hairline-inverse);
+--border-rule:2px solid var(--abm-bordeaux-700);
+
+/* ---- Sémantiques : états ---- */
+--action-bg:var(--abm-bordeaux-700);
+--action-bg-hover:var(--abm-bordeaux-600);
+--action-bg-active:var(--abm-bordeaux-800);
+--action-fg:var(--abm-white);
+--focus-ring:var(--abm-bordeaux-400);
+--overlay-photo:rgba(92,26,30,.72);
+--overlay-scrim:rgba(43,13,15,.55);
+}
