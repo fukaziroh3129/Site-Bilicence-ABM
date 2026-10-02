@@ -104,3 +104,25 @@ Charte graphique ABM v1, intégrée dans le code sous `src/styles/design-system/
   (favicon) fourni — ne pas en inventer un sans validation du bureau.
 - Référence complète (ton éditorial, règles détaillées, composants) : design system Claude
   "ABM — Design System", https://claude.ai/artifact/RZbJkMeWPiK7bdsyapNeC9
+
+## Images et logos manquants
+
+Beaucoup de visuels (photos d'événements, portraits du bureau, logos partenaires —
+notamment le logo de l'Université de Montpellier) ne sont pas encore disponibles et seront
+ajoutés progressivement, au fur et à mesure du développement.
+
+Règle à suivre : ne jamais remplacer une image manquante par une image générique, un
+placeholder de banque d'images, ou une image générée par IA qui simulerait une vraie photo.
+À la place, laisser un emplacement clairement identifié comme vide (cadre avec libellé du
+type "Photo à ajouter — [description]" ou "Logo partenaire à ajouter : Université de
+Montpellier"), aux bonnes dimensions/ratio, prêt à recevoir le fichier final plus tard. Ça
+vaut aussi bien pour les logos partenaires que pour les photos éditoriales.
+
+## Skills design installés
+
+`taste-skill` (dépôt Leonxlnx/taste-skill) est installé dans `.claude/skills/` — il regroupe
+13 variantes (taste générale, gpt-taste, styles spécifiques comme industrial-brutalist-ui,
+minimalist-ui, etc.). Pour ce projet, rester sur le registre institutionnel/sobre du design
+system ABM (voir section Design system ci-dessus) : ignorer les variantes de style qui ne
+correspondent pas à cette identité (notamment les styles brutaliste ou minimaliste, à
+l'opposé du registre "papier et sceau" bordeaux d'ABM).
