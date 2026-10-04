@@ -46,8 +46,9 @@ export function ImportPreComptes() {
         <p className="text-sm text-ink-soft">
           Fichier CSV (dans Excel : « Enregistrer sous → CSV UTF-8 ») avec une première ligne de titres :{" "}
           <b>prénom</b>, <b>nom</b>, <b>e-mail</b> (obligatoires), et si vous les avez <b>promotion</b> (« 2021 » ou
-          « 2021-2024 »), <b>formation</b> et <b>établissement</b>. Rien n’est créé à cette étape : vous verrez d’abord
-          un aperçu.
+          « 2021-2024 »), <b>formation</b>, <b>parcours</b> et <b>établissement</b>, ainsi que <b>téléphone</b>, <b>ville</b> et un séjour
+          Erasmus (<b>université Erasmus</b>, <b>pays Erasmus</b>, <b>ville Erasmus</b>). Rien n’est créé à cette étape :
+          vous verrez d’abord un aperçu.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

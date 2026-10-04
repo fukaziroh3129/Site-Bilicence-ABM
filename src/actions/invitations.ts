@@ -16,7 +16,7 @@ import { PREMIERE_PROMO, normaliser } from "@/lib/format";
 import { champ, valider, type EtatFormulaire } from "@/lib/formulaire";
 import { creerLienInvitation, envoyerInvitation, trouverInvitation } from "@/lib/invitations";
 import { MESSAGE_LIMITE, adresseIp, autoriser } from "@/lib/limite";
-import { trouverOuCreerEtablissement } from "@/lib/liste-etablissements";
+import { codePays, trouverOuAjouterUniversite, trouverOuCreerEtablissement } from "@/lib/liste-etablissements";
 import { peutGererCompte } from "@/lib/roles";
 import { exigerAdmin } from "@/lib/session";
 
@@ -30,6 +30,13 @@ const schemaLigne = z.object({
   promoEntree: z.number().int().min(PREMIERE_PROMO).max(new Date().getFullYear()),
   formation: z.string().trim().max(160).nullable(),
   etablissement: z.string().trim().max(160).nullable(),
+  parcours: z.string().trim().max(160).nullable(),
+  telephone: z.string().trim().max(40).nullable(),
+  ville: z.string().trim().max(120).nullable(),
+  /** Séjour Erasmus (université + pays en code à deux lettres), facultatif. */
+  erasmusUniversite: z.string().trim().max(160).nullable(),
+  erasmusVille: z.string().trim().max(120).nullable(),
+  erasmusPays: z.string().length(2).nullable(),
   /** Fiche existante (sans compte) à laquelle rattacher le pré-compte. */
   ficheId: z.string().nullable(),
 });
@@ -78,6 +85,12 @@ export async function analyserImport(_etat: EtatImport, formData: FormData): Pro
     promo: ["promo", "promotion", "annee", "annee d entree", "promotion d entree"],
     formation: ["formation", "master", "intitule", "diplome", "mention"],
     etablissement: ["etablissement", "universite", "ecole", "lieu"],
+    parcours: ["parcours"],
+    telephone: ["telephone", "tel", "numero de telephone", "portable"],
+    ville: ["ville"],
+    erasmusUniversite: ["universite erasmus", "erasmus", "erasmus universite", "universite d accueil"],
+    erasmusVille: ["ville erasmus", "erasmus ville"],
+    erasmusPays: ["pays erasmus", "erasmus pays", "pays d accueil"],
   });
   if (col.prenom < 0 || col.nom < 0 || col.email < 0) {
     return { erreur: "Colonnes « prénom », « nom » et « e-mail » obligatoires : la première ligne du fichier doit contenir ces titres." };
@@ -100,10 +113,38 @@ export async function analyserImport(_etat: EtatImport, formData: FormData): Pro
     const promo = lirePromo(cellule(col.promo)) ?? promoParDefaut;
     const formation = cellule(col.formation) || null;
     const etablissement = cellule(col.etablissement) || null;
-    const base = { numero: i + 2, prenom, nom, email, promo: promo ? String(promo) : "—", formation: [formation, etablissement].filter(Boolean).join(" — ") };
+    const base = {
+      numero: i + 2,
+      prenom,
+      nom,
+      email,
+      promo: promo ? String(promo) : "—",
+      formation: [formation, etablissement].filter(Boolean).join(" — ") + (cellule(col.erasmusUniversite) ? ` · Erasmus : ${cellule(col.erasmusUniversite)}` : ""),
+    };
     if (!prenom && !nom && !email) return;
 
-    const ligne = { prenom, nom, email, promoEntree: promo ?? 0, formation, etablissement, ficheId: null as string | null };
+    const erasmusUniversite = cellule(col.erasmusUniversite) || null;
+    const paysTexte = cellule(col.erasmusPays);
+    const erasmusPays = paysTexte ? codePays(paysTexte) : null;
+    const ligne = {
+      prenom,
+      nom,
+      email,
+      promoEntree: promo ?? 0,
+      formation,
+      etablissement,
+      parcours: cellule(col.parcours) || null,
+      telephone: cellule(col.telephone) || null,
+      ville: cellule(col.ville) || null,
+      erasmusUniversite,
+      erasmusVille: cellule(col.erasmusVille) || null,
+      erasmusPays,
+      ficheId: null as string | null,
+    };
+    if (erasmusUniversite && !erasmusPays) {
+      apercu.push({ ...base, statut: "erreur", detail: paysTexte ? `pays Erasmus inconnu : « ${paysTexte} »` : "pays Erasmus manquant" });
+      return;
+    }
     const verif = schemaLigne.safeParse(ligne);
     if (!verif.success) {
       const champ = String(verif.error.issues[0].path[0]);
@@ -159,12 +200,28 @@ export async function confirmerImport(_etat: EtatImport, formData: FormData): Pr
           nom: l.nom,
           promoEntree: l.promoEntree,
           emailContact: l.email,
+          telephone: l.telephone,
+          ville: l.ville,
           ...(etablissement && l.formation
-            ? { formations: { create: { intitule: l.formation, etablissement: etablissement.nom, etablissementId: etablissement.id } } }
+            ? {
+                formations: {
+                  create: {
+                    intitule: l.formation,
+                    parcours: l.parcours,
+                    etablissement: etablissement.nom,
+                    etablissementId: etablissement.id,
+                    anneeDebut: l.promoEntree + 3,
+                  },
+                },
+              }
             : {}),
         },
       });
       personneId = personne.id;
+      if (l.erasmusUniversite && l.erasmusPays) {
+        const universiteId = await trouverOuAjouterUniversite(l.erasmusUniversite, l.erasmusVille, l.erasmusPays, { ajouteParId: user.id, aControler: true });
+        await prisma.erasmus.create({ data: { personneId, universiteId, duree: "SEMESTRE" } });
+      }
     }
 
     await prisma.user.create({

@@ -175,7 +175,8 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   dans un commit (`.gitignore` exclut déjà `*.xlsx`, `*.xls`, `import-*.csv`). On les traite par import
   local : console d'administration (Pré-comptes, Établissements → Importer) ou script avec simulation
   par défaut et `--confirmer`. Ne pas afficher leur contenu au-delà de ce qu'il faut pour en comprendre
-  la structure. `Destinations érasmus.xlsx` (séjours, avec noms et téléphones) attend l'import groupé.
+  la structure. Import groupé des trois fichiers (annuaire privé, poursuites, Erasmus) : `npm run import:reel`
+  (`scripts/import-donnees-reelles.ts`, fait en local le 4 octobre 2026) ; propriétaire : `npm run admin:creer`.
 - Plan de construction par étapes (validé le 3 octobre 2026) : la **structure fonctionnelle**
   (étapes 0 à 9 : base, comptes, fiche, annuaire, stages, historique public, offres,
   événements, actualités, bureau, admin) est en place. Restent : contenus réels et finitions

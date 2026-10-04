@@ -69,21 +69,36 @@ Le démarrage du site applique automatiquement les migrations de la base (`prism
    bureau : boutons « Rendre animateur » / « Rendre administrateur ». Lors de la passation, le
    propriétaire transmet son titre (« Transmettre le titre de propriétaire »).
 
-## 7. Importer l'Excel des anciens
+## 7. Charger les données réelles (annuaire, poursuites d'études, Erasmus)
 
-À décider au moment de la mise en ligne. L'Excel est sur un PC, la base sur le serveur :
-- soit ouvrir temporairement un port public sur la base Coolify, lancer depuis le PC
-  `npm run import:excel -- "fichier.xlsx" --confirmer` avec `DATABASE_URL` pointant vers ce port,
-  puis refermer le port ;
-- soit refaire la vérification des fiches importées en local, et ressaisir dans l'administration.
+Les trois fichiers Excel de Guillaume (annuaire privé, poursuites d'études, destinations Erasmus) sont
+compilés en une seule liste de personnes par `npm run import:reel` : une fiche par personne et un
+pré-compte (statut INVITE) pour celles dont on a l'adresse e-mail. Les fichiers restent HORS du dépôt.
 
-Le rapport `import-excel-rapport.csv` liste les fiches à vérifier (vœux multiples, noms composés…).
-Les établissements des formations importées sont reliés à la liste commune et apparaissent « à
-contrôler » dans **Administration → Établissements**. Pour des formations saisies autrement :
-`npm run etablissements:relier -- --confirmer` (simulation sans `--confirmer`).
+En local (déjà fait le 4 octobre 2026, base vidée puis remplie) :
 
-Les bases de master (prénom, nom, e-mail) s'importent depuis **Administration → Pré-comptes**
-(fichier CSV, aperçu avant création), puis on envoie les liens d'invitation.
+```bash
+npm run import:reel -- --annuaire "…" --poursuite "…" --erasmus "…"                  # simulation + rapport
+npm run import:reel -- --annuaire "…" --poursuite "…" --erasmus "…" --confirmer --vider --proprietaire adresse@exemple.fr
+```
+
+Le rapport `import-donnees-rapport.csv` (ignoré par Git) liste les points à vérifier : promotions
+ESTIMÉES pour les adhérents absents des fichiers de poursuite/Erasmus (année de naissance + 18 ans,
+ajustée par la date d'entrée dans l'association), universités Erasmus déduites de la ville, noms de
+l'Excel de poursuite à relire.
+
+En production, la base est vide au départ. Deux façons de la remplir :
+- ouvrir temporairement un port public sur la base Coolify, lancer depuis le PC la commande
+  `--confirmer` (sans `--vider`) avec `DATABASE_URL` pointant vers ce port, puis refermer le port ;
+- ou ne rien importer et laisser le bureau créer les pré-comptes depuis **Administration → Pré-comptes**.
+
+Compte propriétaire (président) : `npm run admin:creer -- adresse@exemple.fr "Prénom" "Nom" [promo]`
+(mot de passe généré, écrit dans `../IDENTIFIANTS-ADMIN.txt` hors Git ; `PROPRIETAIRE_MOT_DE_PASSE`
+permet d'imposer le même mot de passe qu'en local). Cette commande remplace l'étape 6.
+
+Ensuite : **Administration → Pré-comptes → envoyer les invitations** (après avoir configuré le SMTP,
+étape 3). L'ancien import `npm run import:excel` reste disponible pour le seul fichier de poursuite.
+`npm run etablissements:relier -- --confirmer` relie les formations saisies autrement.
 
 ## 8. Nom de domaine
 

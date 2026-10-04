@@ -17,6 +17,9 @@
     "db:remplir": "prisma db seed",
     "db:studio": "prisma studio",
     "admin:promouvoir": "tsx scripts/promouvoir-admin.ts",
+    "admin:creer": "tsx scripts/creer-proprietaire.ts",
+    "export:precomptes": "tsx scripts/exporter-csv-precomptes.ts",
+    "import:reel": "tsx scripts/import-donnees-reelles.ts",
     "import:excel": "tsx scripts/import-excel.ts",
     "etablissements:relier": "tsx scripts/relier-etablissements.ts"
   },
