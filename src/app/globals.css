@@ -1,10 +1,11 @@
 @import "tailwindcss";
-@import "../styles/design-system/fonts.css";
+/* Les polices sont chargées par next/font dans src/app/layout.tsx. */
 @import "../styles/design-system/colors.css";
 @import "../styles/design-system/typography.css";
 @import "../styles/design-system/spacing.css";
 @import "../styles/design-system/shape.css";
 @import "../styles/design-system/motion.css";
+@import "../styles/design-system/effets.css";
 
 /* Pas de dark mode séparé : le design system ABM a son propre registre bordeaux,
    il ne suit pas le mode sombre du système. */
@@ -54,6 +55,31 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body);
+}
+
+/* L'en-tête reste collé en haut (72 px) : on décale les ancres et le focus pour qu'il ne les cache pas (WCAG 2.4.11). */
+html {
+  scroll-padding-top: 88px;
+}
+
+/* Tailwind 4 n'affiche plus la main sur les boutons : on la rétablit sur tout ce qui est cliquable. */
+button:not(:disabled),
+[role="button"],
+summary,
+select,
+label:has(input[type="checkbox"]) {
+  cursor: pointer;
+}
+
+/* Focus clavier toujours visible (charte : contour bordeaux + anneau rosé de 3 px). */
+:focus-visible {
+  outline: 2px solid var(--abm-bordeaux-700);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(184, 92, 95, 0.25);
+}
+
+.bg-bordeaux :focus-visible {
+  outline-color: var(--abm-white);
 }
 
 .eyebrow {

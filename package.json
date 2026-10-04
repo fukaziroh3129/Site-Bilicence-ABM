@@ -2,25 +2,66 @@
   "name": "site-abm-tmp",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "dev": "prisma generate && next dev",
+    "build": "prisma generate && next build",
+    "start": "prisma migrate deploy && next start",
+    "lint": "eslint",
+    "postinstall": "prisma generate",
+    "db": "tsx scripts/db-local.ts",
+    "db:migrer": "prisma migrate dev",
+    "db:deployer": "prisma migrate deploy",
+    "db:remplir": "prisma db seed",
+    "db:studio": "prisma studio",
+    "admin:promouvoir": "tsx scripts/promouvoir-admin.ts",
+    "import:excel": "tsx scripts/import-excel.ts",
+    "etablissements:relier": "tsx scripts/relier-etablissements.ts"
   },
   "dependencies": {
-    "next": "16.3.2",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "better-auth": "^1.7.7",
+    "dotenv": "^18.0.5",
+    "lucide-react": "^1.50.0",
+    "motion": "^14.0.0",
+    "next": "16.3.8",
+    "nodemailer": "^10.0.13",
+    "pg": "^8.23.1",
+    "prisma": "^7.10.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "tsx": "^4.23.15",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "d3-geo": "^3.1.1",
+    "embedded-postgres": "^17.10.0-beta.17",
     "eslint": "^9",
-    "eslint-config-next": "16.3.2",
+    "eslint-config-next": "16.3.8",
+    "exceljs": "^4.4.0",
+    "i18n-iso-countries": "^7.14.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "topojson-client": "^3.1.0",
+    "typescript": "^5",
+    "world-atlas": "^2.0.2"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.10.0": true,
+    "esbuild@0.28.2": true,
+    "unrs-resolver@1.12.2": true,
+    "@embedded-postgres/windows-x64@17.10.0-beta.17": true
+  },
+  "overrides": {
+    "mysql2": "^3.24.5"
   }
 }

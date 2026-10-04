@@ -39,3 +39,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# modèle de variables d'environnement (sans secret) : versionné
+!.env.example
+
+# client Prisma généré (recréé par `prisma generate`)
+/src/generated/
+
+# base PostgreSQL locale et fichiers téléversés en local
+/.pgdata/
+/uploads/
+
+# données personnelles : jamais dans Git
+*.xlsx
+*.xls
+/import-*.csv
+
+# carte du code générée par graphify (outil local, régénérée à chaque modification)
+/graphify-out/

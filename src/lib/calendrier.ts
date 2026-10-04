@@ -1,0 +1,54 @@
+// Export des événements vers les agendas (Google Agenda, Apple, Outlook…).
+import type { Evenement } from "@/generated/prisma/client";
+import { adresseSite } from "@/lib/email";
+
+/** Durée par défaut d'un événement sans heure de fin. */
+const DUREE_PAR_DEFAUT = 2 * 60 * 60 * 1000;
+
+/** Date au format des agendas : 20261212T173000Z */
+function formatAgenda(date: Date) {
+  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function fin(e: Evenement) {
+  return e.fin ?? new Date(e.debut.getTime() + DUREE_PAR_DEFAUT);
+}
+
+/** Lien « Ajouter à Google Agenda ». */
+export function lienGoogleAgenda(e: Evenement) {
+  const parametres = new URLSearchParams({
+    action: "TEMPLATE",
+    text: e.titre,
+    dates: `${formatAgenda(e.debut)}/${formatAgenda(fin(e))}`,
+    details: [e.description, e.lien].filter(Boolean).join("\n\n"),
+    location: e.lieu ?? "",
+  });
+  return `https://calendar.google.com/calendar/render?${parametres}`;
+}
+
+function echapper(texte: string) {
+  return texte.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+
+/** Fichier .ics d'un événement (s'ouvre dans n'importe quel agenda). */
+export function fichierIcs(e: Evenement) {
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//ABM//Site bilicence//FR",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    `UID:${e.id}@bilicence.fr`,
+    `DTSTAMP:${formatAgenda(new Date())}`,
+    `DTSTART:${formatAgenda(e.debut)}`,
+    `DTEND:${formatAgenda(fin(e))}`,
+    `SUMMARY:${echapper(e.titre)}`,
+    e.lieu ? `LOCATION:${echapper(e.lieu)}` : null,
+    e.description ? `DESCRIPTION:${echapper(e.description)}` : null,
+    `URL:${e.lien ?? adresseSite("/espace/evenements")}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ]
+    .filter(Boolean)
+    .join("\r\n");
+}

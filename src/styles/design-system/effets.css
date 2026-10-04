@@ -1,0 +1,399 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Effets premium ABM (ajout du 3 octobre 2026, à la demande de Guillaume).
+   La charte v1 proscrivait les dégradés : ils sont désormais autorisés, mais
+   UNIQUEMENT tonaux, dans la gamme bordeaux de la charte (jamais d'autre teinte).
+   Toujours pas de flou (backdrop-filter), pas de bruit, pas d'émoji.
+   Toutes les animations s'arrêtent avec « réduire les animations ».
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Dégradés tonaux */
+  --degrade-bordeaux:
+    radial-gradient(120% 90% at 88% 0%, rgba(184, 92, 95, 0.38) 0%, rgba(184, 92, 95, 0) 55%),
+    linear-gradient(155deg, #74282c 0%, #5c1a1e 45%, #3a1013 100%);
+  --degrade-bordeaux-profond:
+    radial-gradient(90% 70% at 10% 100%, rgba(184, 92, 95, 0.22) 0%, rgba(184, 92, 95, 0) 60%),
+    linear-gradient(180deg, #4a1518 0%, #2b0d0f 100%);
+  --degrade-bouton: linear-gradient(180deg, #74282c 0%, #5c1a1e 100%);
+  --degrade-papier: linear-gradient(180deg, #fdfbf8 0%, #f8f1ec 100%);
+  --degrade-filet: linear-gradient(90deg, rgba(92, 26, 30, 0) 0%, rgba(92, 26, 30, 0.45) 50%, rgba(92, 26, 30, 0) 100%);
+
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Fonds ─────────────────────────────────────────────────────────────────── */
+
+.fond-bordeaux {
+  background: var(--degrade-bordeaux);
+  color: var(--abm-white);
+}
+
+.fond-bordeaux-profond {
+  background: var(--degrade-bordeaux-profond);
+  color: var(--abm-white);
+}
+
+.fond-papier {
+  background: var(--degrade-papier);
+}
+
+/* Filigrane : le sceau répété en motif à très faible opacité (charte §4). */
+.filigrane {
+  position: relative;
+  isolation: isolate;
+}
+.filigrane::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("/brand/logo-abm-seal-white.png");
+  background-size: 168px 168px;
+  background-repeat: repeat;
+  opacity: var(--watermark-opacity);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.2) 100%);
+}
+
+/* Filet décoratif qui s'estompe aux deux extrémités */
+.filet-degrade {
+  height: 1px;
+  background: var(--degrade-filet);
+}
+
+/* Panneau institutionnel : cadre fin intérieur en retrait (charte §4, « FramedPanel ») */
+.cadre-fin {
+  position: relative;
+}
+.cadre-fin::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid var(--abm-hairline);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.fond-bordeaux.cadre-fin::after {
+  border-color: var(--abm-hairline-inverse);
+}
+
+/* Lettrine : première lettre d'un article en grand, en Playfair bordeaux */
+.lettrine > p:first-child::first-letter {
+  float: left;
+  margin: 0.08em 0.12em 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 4.2em;
+  line-height: 0.82;
+  color: var(--abm-bordeaux-700);
+}
+
+/* Texte des pages légales : listes et liens lisibles */
+.texte-legal ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.texte-legal li + li {
+  margin-top: 0.35rem;
+}
+.texte-legal a {
+  color: var(--abm-bordeaux-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.texte-legal strong {
+  font-weight: 600;
+  color: var(--abm-ink);
+}
+
+/* ─── Boutons : reflet qui traverse au survol ───────────────────────────────── */
+
+.reflet {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.reflet::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
+  transform: translateX(-120%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reflet:hover::after {
+    transform: translateX(120%);
+    transition: transform 700ms var(--ease-premium);
+  }
+}
+
+/* ─── Cartes : élévation au survol ──────────────────────────────────────────── */
+
+.carte-premium {
+  transition:
+    transform 360ms var(--ease-premium),
+    box-shadow 360ms var(--ease-premium),
+    border-color 200ms var(--ease-standard);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .carte-premium:hover {
+    transform: translateY(-3px);
+  }
+}
+.carte-premium:hover {
+  box-shadow: var(--shadow-raised);
+  border-color: rgba(92, 26, 30, 0.55);
+}
+
+/* Projecteur : halo qui suit la souris (position fournie par CarteProjecteur) */
+.projecteur {
+  position: relative;
+  isolation: isolate;
+}
+.projecteur::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms var(--ease-standard);
+  background: radial-gradient(420px circle at var(--x, 50%) var(--y, 50%), rgba(184, 92, 95, 0.16), transparent 60%);
+}
+.projecteur.fond-bordeaux::before {
+  background: radial-gradient(420px circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, 0.14), transparent 60%);
+}
+.projecteur:hover::before {
+  opacity: 1;
+}
+
+/* Image qui s'agrandit légèrement au survol de son lien */
+.zoom-image {
+  overflow: hidden;
+}
+.zoom-image img {
+  transition: transform 700ms var(--ease-premium);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .group:hover .zoom-image img {
+    transform: scale(1.04);
+  }
+}
+
+/* ─── Liens : soulignement qui se dessine ───────────────────────────────────── */
+
+.lien-anime {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  padding-bottom: 2px;
+  transition: background-size 360ms var(--ease-premium), color 120ms var(--ease-standard);
+}
+.lien-anime:hover,
+.lien-anime[aria-current="page"] {
+  background-size: 100% 1px;
+}
+
+/* Flèche qui avance au survol du parent .group */
+.fleche {
+  transition: transform 360ms var(--ease-premium);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .group:hover .fleche {
+    transform: translateX(4px);
+  }
+}
+
+/* ─── Défilement horizontal (destinations des anciens) ─────────────────────── */
+
+.defilement {
+  mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+}
+.defilement-piste {
+  display: flex;
+  width: max-content;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .defilement-piste {
+    animation: defilement 60s linear infinite;
+  }
+  .defilement:hover .defilement-piste {
+    animation-play-state: paused;
+  }
+}
+@keyframes defilement {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ─── Bandeau d'accueil : animations CSS, jouées dès l'affichage (avant le JavaScript) ─── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .revele-mot {
+    animation: revele-mot 900ms var(--ease-premium) both;
+  }
+  .apparait {
+    animation: apparait 800ms var(--ease-premium) both;
+  }
+  .sceau-entree {
+    animation: sceau-entree 360ms var(--ease-premium) 300ms both;
+  }
+}
+@keyframes revele-mot {
+  from {
+    transform: translateY(105%);
+  }
+}
+@keyframes apparait {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes sceau-entree {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ─── Squelettes de chargement : reflet qui passe lentement ─────────────────── */
+
+.squelette {
+  background: linear-gradient(90deg, rgba(92, 26, 30, 0.06) 0%, rgba(92, 26, 30, 0.12) 50%, rgba(92, 26, 30, 0.06) 100%);
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .squelette {
+    animation: squelette 1.6s ease-in-out infinite;
+  }
+}
+@keyframes squelette {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* ─── Barre de progression (« Ma fiche ») : se remplit à l'arrivée sur la page ─ */
+
+@media (prefers-reduced-motion: no-preference) {
+  .barre-progression {
+    transform-origin: left;
+    animation: barre-progression 1.1s var(--ease-premium) 0.2s both;
+  }
+}
+@keyframes barre-progression {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* ─── Typographie : titres équilibrés, sélection aux couleurs de la charte ─── */
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+::selection {
+  background: var(--abm-bordeaux-700);
+  color: var(--abm-white);
+}
+
+/* ─── Sceau 3D du bandeau d'accueil ─────────────────────────────────────────── */
+
+/* Respiration : la face oscille de ± 4° autour de son repos (−22°), en courbe sinusoïdale,
+   sans arrêt marqué ; le flottement vertical a une autre période pour ne pas paraître mécanique.
+   Sans animation, le repos est donné par le style en ligne du composant. */
+@media (prefers-reduced-motion: no-preference) {
+  .sceau-respire {
+    animation: sceau-respire 6s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
+  }
+  .sceau-flotte {
+    animation: sceau-flotte 4.5s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
+  }
+}
+@keyframes sceau-respire {
+  from {
+    transform: rotateY(-26deg) rotateX(6deg);
+  }
+  to {
+    transform: rotateY(-18deg) rotateX(4deg);
+  }
+}
+@keyframes sceau-flotte {
+  from {
+    transform: translateY(3px);
+  }
+  to {
+    transform: translateY(-3px);
+  }
+}
+
+/* ─── Courbes de niveau du bandeau d'accueil (composant <MotifCourbes />) ──────
+   Motif original (scripts/motif-courbes.mjs), blanc à 8 %, effacé dans la couronne du sceau :
+   les variables --degage-* sont posées par le composant une fois la position du sceau mesurée. */
+.motif-courbes {
+  --degage-x: 50%;
+  --degage-y: 50%;
+  --degage-rayon: 0px;
+  --degage-fondu: 0px;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url("/brand/motif-courbes.svg") repeat;
+  background-size: 600px 600px;
+  opacity: 0;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--degage-x) var(--degage-y),
+    transparent var(--degage-rayon),
+    #000 calc(var(--degage-rayon) + var(--degage-fondu))
+  );
+  mask-image: radial-gradient(
+    circle at var(--degage-x) var(--degage-y),
+    transparent var(--degage-rayon),
+    #000 calc(var(--degage-rayon) + var(--degage-fondu))
+  );
+}
+.motif-courbes[data-pret] {
+  opacity: 0.08;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .motif-courbes {
+    transition: opacity 600ms var(--ease-premium);
+  }
+}
+
+/* ─── Entrée de page ────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .entree-page {
+    animation: entree-page 520ms var(--ease-premium) both;
+  }
+}
+@keyframes entree-page {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Hachures tonales : seconde partie d'une barre empilée (« Autres IEP » des statistiques).
+   Le motif distingue les deux parties sans reposer sur la seule couleur. */
+.rayures-iep {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--abm-bordeaux-300) 0 4px,
+    var(--abm-bordeaux-200) 4px 8px
+  );
+}

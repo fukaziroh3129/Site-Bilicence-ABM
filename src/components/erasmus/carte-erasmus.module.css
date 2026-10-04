@@ -1,0 +1,486 @@
+/* Carte des Erasmus : pays colorés selon le nombre de départs (dégradé bordeaux de la charte). */
+
+.disposition {
+  display: grid;
+  gap: 24px;
+}
+@media (min-width: 1024px) {
+  .disposition {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+  }
+}
+
+.cadre {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(92, 26, 30, 0.15);
+  border-radius: 10px;
+  background: var(--abm-paper);
+}
+.carte {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+}
+.pays {
+  fill: var(--abm-paper-warm);
+  stroke: #fff;
+  stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
+}
+.pays[data-niveau="1"] { fill: var(--abm-bordeaux-200); }
+.pays[data-niveau="2"] { fill: var(--abm-bordeaux-300); }
+.pays[data-niveau="3"] { fill: var(--abm-bordeaux-400); }
+.pays[data-niveau="4"] { fill: var(--abm-bordeaux-600); }
+.pays[data-niveau="5"] { fill: var(--abm-bordeaux-800); }
+.pays[data-niveau] {
+  cursor: pointer;
+}
+.pays[data-niveau]:hover,
+.pays[data-niveau]:focus-visible {
+  outline: none;
+  stroke: var(--abm-bordeaux-900);
+  stroke-width: 1.4;
+}
+.pays[data-choisi="true"] {
+  stroke: var(--abm-bordeaux-900);
+  stroke-width: 2;
+}
+/* Pays ouvert : les autres s'effacent un peu pour le faire ressortir */
+.pays[data-estompe="true"] {
+  opacity: 0.45;
+}
+.pays {
+  transition: opacity 0.4s;
+}
+
+/* Barre au-dessus de la carte : recherche + boutons Europe / Monde */
+.barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.vues {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgba(92, 26, 30, 0.15);
+  border-radius: 999px;
+  background: #fff;
+}
+.vues button {
+  min-height: 32px;
+  padding: 4px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--abm-bordeaux-700);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.vues button[aria-pressed="true"] {
+  background: var(--abm-bordeaux-700);
+  color: #fff;
+}
+
+/* Légende */
+.legende {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(92, 26, 30, 0.12);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--abm-ink-soft);
+  font-size: 12px;
+}
+.legende ol {
+  display: flex;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.legende li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 30px;
+}
+.legende i {
+  display: block;
+  width: 30px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* Fiche au survol (souris uniquement ; au doigt, on touche le pays pour l'ouvrir dans le panneau) */
+.bulle {
+  position: absolute;
+  z-index: 10;
+  width: 270px;
+  padding: 14px 16px 12px;
+  border: 1px solid rgba(92, 26, 30, 0.12);
+  border-top: 3px solid var(--abm-bordeaux-700);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow-raised);
+  font-size: 13px;
+  line-height: 1.35;
+  pointer-events: none;
+  transform: translate(16px, 16px);
+  animation: bulle-entre 0.18s ease-out;
+}
+.bulle[data-gauche="true"] {
+  transform: translate(calc(-100% - 16px), 16px);
+}
+.bulle[data-haut="true"] {
+  transform: translate(16px, calc(-100% - 16px));
+}
+.bulle[data-gauche="true"][data-haut="true"] {
+  transform: translate(calc(-100% - 16px), calc(-100% - 16px));
+}
+@keyframes bulle-entre {
+  from {
+    opacity: 0;
+  }
+}
+.bulleTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.bulleTete b {
+  color: var(--abm-bordeaux-700);
+  font: 700 17px/1.2 var(--font-display);
+}
+.rang {
+  margin: 0;
+  color: var(--abm-bordeaux-500);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.bulleChiffre {
+  margin: 8px 0 6px;
+  color: var(--abm-ink-soft);
+}
+.bulleChiffre strong {
+  color: var(--abm-ink);
+  font: 400 28px/1 var(--font-impact);
+}
+.part {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--abm-bordeaux-100);
+}
+.part i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--degrade-bouton);
+}
+.partTexte {
+  display: block;
+  margin-top: 4px;
+  color: var(--abm-ink-soft);
+  font-size: 12px;
+}
+.bulle ul {
+  margin: 10px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid rgba(92, 26, 30, 0.1);
+  list-style: none;
+}
+.bulle li {
+  display: grid;
+  grid-template-columns: 1fr 48px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+.bulle li span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bulle li span:last-child {
+  color: var(--abm-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+/* Petite barre proportionnelle (universités, classement) */
+.mini {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--abm-bordeaux-100);
+}
+.mini i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--abm-bordeaux-400);
+}
+.astuce {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 10px 0 0;
+  color: var(--abm-bordeaux-700);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Bouton « Vue d'ensemble » quand la carte est zoomée sur un pays */
+.recentrer {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid rgba(92, 26, 30, 0.15);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--abm-bordeaux-700);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.recentrer:hover {
+  background: var(--abm-bordeaux-100);
+}
+
+/* Recherche d'un pays ou d'une université */
+.recherche {
+  position: relative;
+  flex: 1 1 280px;
+  max-width: 440px;
+}
+.loupe {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  color: var(--abm-bordeaux-700);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.recherche input {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 14px 8px 40px;
+  border: 1px solid rgba(92, 26, 30, 0.25);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--abm-ink);
+  font-size: 15px;
+}
+.recherche input:focus {
+  border-color: var(--abm-bordeaux-700);
+  outline: 2px solid var(--abm-bordeaux-200);
+  outline-offset: 1px;
+}
+.suggestions {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  margin: 0;
+  padding: 6px;
+  border: 1px solid rgba(92, 26, 30, 0.15);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: var(--shadow-raised);
+  list-style: none;
+}
+.suggestions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.suggestions li[aria-selected="true"],
+.suggestions li[role="option"]:hover {
+  background: var(--abm-bordeaux-100);
+}
+.suggestions b {
+  display: block;
+  font-weight: 600;
+}
+.suggestions small {
+  display: block;
+  color: var(--abm-ink-soft);
+  font-size: 12px;
+}
+.suggestions .aucune {
+  color: var(--abm-ink-soft);
+  font-size: 14px;
+  cursor: default;
+}
+
+/* Panneau à droite (ou sous la carte sur mobile) */
+.panneau {
+  max-height: 640px;
+  overflow-y: auto;
+  border: 1px solid rgba(92, 26, 30, 0.15);
+  border-radius: 10px;
+  background: #fff;
+  padding: 20px;
+}
+.panneau h2 {
+  margin: 0;
+  color: var(--abm-bordeaux-700);
+  font: 700 22px/1.2 var(--font-display);
+}
+.sousTitre {
+  margin: 4px 0 0;
+  color: var(--abm-ink-soft);
+  font-size: 14px;
+}
+.classement {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.classement button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--abm-ink);
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+.classement button:hover {
+  background: var(--abm-bordeaux-100);
+}
+.classementNom {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+.nombre {
+  min-width: 28px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--abm-bordeaux-100);
+  color: var(--abm-bordeaux-700);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--abm-bordeaux-700);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.universites {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.universites > li {
+  padding: 12px 0;
+  border-top: 1px solid rgba(92, 26, 30, 0.12);
+}
+.universites > li:first-child {
+  border-top: 0;
+}
+.universites > li > .mini {
+  margin-top: 6px;
+}
+/* Université trouvée par la recherche */
+.universites > li[data-surlignee="true"] {
+  margin: 0 -10px;
+  padding: 12px 10px;
+  border-radius: 6px;
+  background: var(--abm-bordeaux-100);
+}
+.ligneUniv {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ligneUniv b {
+  font-weight: 600;
+}
+.ligneUniv small {
+  display: block;
+  color: var(--abm-ink-soft);
+  font-size: 13px;
+}
+.sejours {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sejours li {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--abm-paper);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.sejours a {
+  color: var(--abm-bordeaux-700);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.sejours span {
+  display: block;
+  color: var(--abm-ink-soft);
+  font-size: 13px;
+}
+.sejours p {
+  margin: 4px 0 0;
+}
+.invitation {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(92, 26, 30, 0.12);
+  color: var(--abm-ink-soft);
+  font-size: 13px;
+}
+.invitation a {
+  color: var(--abm-bordeaux-700);
+  font-weight: 600;
+}

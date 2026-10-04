@@ -1,8 +1,9 @@
 :root{
---font-display:"Playfair Display","Didot",Georgia,serif;
---font-impact:"Anton","Archivo Black",Impact,sans-serif;
---font-script:"Great Vibes","Alex Brush",cursive;
---font-body:"Source Sans 3","Source Sans Pro",system-ui,sans-serif;
+/* Les variables --font-playfair, --font-anton, etc. sont fournies par next/font (src/app/layout.tsx). */
+--font-display:var(--font-playfair),"Playfair Display","Didot",Georgia,serif;
+--font-impact:var(--font-anton),"Anton","Archivo Black",Impact,sans-serif;
+--font-script:var(--font-great-vibes),"Great Vibes","Alex Brush",cursive;
+--font-body:var(--font-source-sans),"Source Sans 3","Source Sans Pro",system-ui,sans-serif;
 
 --weight-regular:400;
 --weight-medium:500;

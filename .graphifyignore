@@ -1,0 +1,7 @@
+# Dossiers exclus du graphe de code (graphify)
+.claude/
+graphify-out/
+src/generated/
+node_modules/
+.pgdata/
+uploads/

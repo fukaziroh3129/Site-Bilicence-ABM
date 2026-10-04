@@ -1,0 +1,417 @@
+// Schéma de la base de données du site ABM.
+// Après toute modification : `npm run db:migrer -- --name description-courte`
+// (crée une migration et régénère le client Prisma).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Comptes — tables gérées par Better Auth (noms anglais imposés par la bibliothèque),
+// complétées par les champs propres à ABM.
+// ───────────────────────────────────────────────────────────────────────────────
+
+enum StatutCompte {
+  INVITE // pré-compte créé par le bureau (bases de master) : la personne n'a pas encore activé son compte
+  EN_ATTENTE // inscrit, en attente de validation par le bureau
+  ACTIF // validé : accès à l'espace membres
+  REFUSE
+}
+
+// Rôles du bureau (src/lib/roles.ts). Un seul propriétaire, transmissible mais jamais supprimé.
+enum RoleCompte {
+  MEMBRE
+  ANIMATEUR // valide les comptes, gère le contenu (actualités, événements, offres, bureau), domaines et établissements
+  ADMIN // animateur + fiches et comptes (animateurs, mots de passe, suppressions, pré-comptes)
+  PROPRIETAIRE // président de l'association : tous les droits, nomme et retire les administrateurs
+}
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Champs ABM, saisis à l'inscription pour aider le bureau à identifier la personne
+  prenom      String @default("")
+  nom         String @default("")
+  promoEntree Int?
+
+  statut     StatutCompte @default(EN_ATTENTE)
+  role       RoleCompte   @default(MEMBRE)
+  // Fiche alumni rattachée par le bureau lors de la validation
+  personneId String?      @unique
+  personne   Personne?    @relation(fields: [personneId], references: [id], onDelete: SetNull)
+
+  // Pré-compte (statut INVITE) : date du dernier envoi du lien d'invitation
+  invitationEnvoyeeLe DateTime?
+
+  sessions              Session[]
+  accounts              Account[]
+  offresDeposees        Offre[]
+  notesRedigees         NoteModification[]
+  etablissementsAjoutes Etablissement[]
+  domainesAjoutes       Domaine[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Réseau alumni
+// ───────────────────────────────────────────────────────────────────────────────
+
+// Situation affichée en étiquette sur la carte publique (« En poste », « En master »…).
+enum StatutActuel {
+  EN_LICENCE
+  EN_MASTER
+  EN_DOCTORAT
+  EN_ALTERNANCE
+  EN_POSTE
+  CESURE
+  EN_RECHERCHE
+}
+
+// La fiche d'une personne de la bi-licence. Elle existe même sans compte
+// (personnes importées de l'Excel ou saisies par le bureau).
+model Personne {
+  id                String        @id @default(cuid())
+  prenom            String
+  nom               String
+  promoEntree       Int // 2021 pour la promotion 2021-2024
+  statutActuel      StatutActuel?
+  situationActuelle String? // poste ou formation actuelle, ex. « Chargée de mission Europe »
+  structureActuelle String? // ex. « Région Occitanie »
+  secteurs          String[] // codes des domaines (table Domaine), 3 au maximum
+  ville             String?
+  presentation      String? // une ou deux phrases, affichées sur la carte publique
+  conseil           String? // conseil aux étudiants de la bi-licence, au verso de la carte
+
+  // Contacts, visibles par les membres connectés uniquement si la personne l'a choisi
+  linkedin          String?
+  emailContact      String?
+  telephone         String?
+  afficherLinkedin  Boolean @default(false)
+  afficherEmail     Boolean @default(false)
+  afficherTelephone Boolean @default(false)
+
+  // RGPD : apparition dans l'historique public des promotions uniquement après accord explicite
+  consentementPublic   Boolean   @default(false)
+  consentementPublicLe DateTime?
+
+  creeLe    DateTime @default(now())
+  modifieLe DateTime @updatedAt
+
+  compte      User?
+  formations  Formation[]
+  experiences Experience[]
+  erasmus     Erasmus[]
+  notes       NoteModification[]
+
+  @@index([promoEntree])
+}
+
+// Note laissée par le bureau quand il modifie la fiche d'un membre (motif obligatoire) : visible
+// par la personne concernée (« Ma fiche ») et par les administrateurs (historique).
+model NoteModification {
+  id         String    @id @default(cuid())
+  personneId String
+  personne   Personne  @relation(fields: [personneId], references: [id], onDelete: Cascade)
+  auteurId   String?
+  auteur     User?     @relation(fields: [auteurId], references: [id], onDelete: SetNull)
+  auteurNom  String // conservé même si le compte de l'auteur est supprimé
+  objet      String // ce qui a été modifié, ex. « Formation : Master Affaires publiques »
+  motif      String
+  lueLe      DateTime? // date à laquelle la personne l'a marquée comme lue
+  creeLe     DateTime  @default(now())
+
+  @@index([personneId])
+}
+
+// Formations suivies après (ou en parallèle de) la bi-licence : masters, écoles…
+model Formation {
+  id               String         @id @default(cuid())
+  personneId       String
+  personne         Personne       @relation(fields: [personneId], references: [id], onDelete: Cascade)
+  intitule         String // ex. « Master Relations internationales »
+  parcours         String?
+  // Nom de l'établissement, recopié depuis la liste commune (tenu à jour si le bureau le renomme ou
+  // le fusionne) ; etablissementId est vide seulement pour les saisies antérieures à la liste.
+  etablissement    String
+  etablissementId  String?
+  etablissementRef Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  anneeDebut       Int?
+  anneeFin         Int?
+  creeLe           DateTime       @default(now())
+  modifieLe        DateTime       @updatedAt
+
+  @@index([personneId])
+  @@index([etablissementId])
+}
+
+enum TypeExperience {
+  STAGE
+  ALTERNANCE
+  EMPLOI
+  ASSOCIATIF
+  VOLONTARIAT
+  AUTRE
+}
+
+enum Niveau {
+  LICENCE
+  MASTER
+}
+
+// Stages et emplois. Les stages alimentent l'archive des stages.
+model Experience {
+  id           String         @id @default(cuid())
+  personneId   String
+  personne     Personne       @relation(fields: [personneId], references: [id], onDelete: Cascade)
+  type         TypeExperience
+  organisation String // entreprise, administration, association…
+  poste        String?
+  secteurs     String[] // codes des domaines (table Domaine)
+  niveau       Niveau? // pour les stages : effectué en licence ou en master
+  ville        String?
+  debut        DateTime?
+  fin          DateTime?
+  resume       String? // court, affiché dans les listes
+  missions     String? // missions principales et déroulé (stages)
+  obtention    String? // « Comment j'ai obtenu ce stage » : démarches, conseils (membres connectés)
+
+  // Contact utilisé pour obtenir le stage (tuteur, recruteur…), montré aux membres seulement si
+  // partagerContact. Le nom et le moyen de contact d'un tiers ne sont enregistrés qu'avec son accord.
+  partagerContact Boolean @default(false)
+  contactFonction String?
+  contactAccord   Boolean @default(false) // le membre déclare avoir l'accord de la personne
+  contactNom      String?
+  contactMoyen    String? // libre : e-mail, téléphone, réseau social…
+
+  // Rapport de stage (PDF), téléchargeable par les membres validés seulement si partagerRapport.
+  rapportFichier  String? // nom du fichier dans UPLOAD_DIR/rapports
+  partagerRapport Boolean @default(false)
+
+  creeLe    DateTime @default(now())
+  modifieLe DateTime @updatedAt
+
+  @@index([personneId])
+  @@index([type])
+}
+
+// Domaines professionnels (ex. « Finance / banque / assurance »). Les fiches et les expériences
+// enregistrent le CODE : on peut renommer un domaine sans toucher aux fiches.
+model Domaine {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  libelle     String // libellé complet, dans les formulaires
+  court       String // libellé court, dans les filtres et sur les cartes
+  // Ajouté par un membre : utilisable tout de suite, à contrôler par le bureau (tableau de bord).
+  aControler  Boolean  @default(false)
+  ajouteParId String?
+  ajoutePar   User?    @relation(fields: [ajouteParId], references: [id], onDelete: SetNull)
+  ordre       Int      @default(100)
+  creeLe      DateTime @default(now())
+  modifieLe   DateTime @updatedAt
+
+  @@index([aControler])
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Erasmus (terme générique sur le site : tout séjour d'études à l'étranger)
+// ───────────────────────────────────────────────────────────────────────────────
+
+enum TypeEtablissement {
+  IEP
+  UNIVERSITE
+  ECOLE
+  AUTRE
+}
+
+// Liste unifiée des établissements : universités d'Erasmus ET établissements de poursuite d'études
+// (masters, écoles, IEP). Évite qu'une petite différence d'écriture crée un doublon sur la carte ou
+// dans les statistiques. Un membre peut en ajouter un : il est utilisable tout de suite, puis le
+// bureau le contrôle (corrige, fusionne ou supprime).
+model Etablissement {
+  id          String            @id @default(cuid())
+  nom         String // ex. « Université de Vienne », « Sciences Po Paris »
+  ville       String?
+  pays        String            @default("FR") // code ISO à deux lettres, ex. « AT »
+  type        TypeEtablissement @default(UNIVERSITE)
+  aControler  Boolean           @default(false)
+  ajouteParId String?
+  ajoutePar   User?             @relation(fields: [ajouteParId], references: [id], onDelete: SetNull)
+  creeLe      DateTime          @default(now())
+  modifieLe   DateTime          @updatedAt
+
+  sejours    Erasmus[]
+  formations Formation[]
+
+  @@index([pays])
+  @@index([aControler])
+}
+
+enum DureeErasmus {
+  SEMESTRE
+  ANNEE
+}
+
+// Un séjour Erasmus d'une personne. La carte publique n'en montre que des chiffres
+// (pays, université, nombre de départs) ; le détail est réservé aux membres connectés.
+model Erasmus {
+  id           String        @id @default(cuid())
+  personneId   String
+  personne     Personne      @relation(fields: [personneId], references: [id], onDelete: Cascade)
+  universiteId String
+  universite   Etablissement @relation(fields: [universiteId], references: [id], onDelete: Restrict)
+  annee        Int? // année de départ
+  duree        DureeErasmus?
+  niveau       Niveau? // effectué en licence ou en master
+  descriptif   String? // court, au dos de la carte publique si la personne l'a accepté
+  retour       String? // retour d'expérience détaillé, membres connectés uniquement
+  creeLe       DateTime      @default(now())
+  modifieLe    DateTime      @updatedAt
+
+  @@index([personneId])
+  @@index([universiteId])
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Vie de l'association
+// ───────────────────────────────────────────────────────────────────────────────
+
+enum TypeOffre {
+  STAGE
+  ALTERNANCE
+  EMPLOI
+}
+
+enum StatutOffre {
+  EN_ATTENTE // déposée, en attente de validation par le bureau
+  PUBLIEE
+  REFUSEE
+}
+
+model Offre {
+  id           String      @id @default(cuid())
+  titre        String
+  organisation String
+  type         TypeOffre
+  lieu         String?
+  description  String
+  lien         String?
+  contact      String?
+  dateLimite   DateTime?
+  statut       StatutOffre @default(EN_ATTENTE)
+  publieeLe    DateTime?
+  deposeParId  String?
+  deposePar    User?       @relation(fields: [deposeParId], references: [id], onDelete: SetNull)
+  creeLe       DateTime    @default(now())
+  modifieLe    DateTime    @updatedAt
+
+  @@index([statut])
+}
+
+model Evenement {
+  id          String    @id @default(cuid())
+  titre       String
+  debut       DateTime
+  fin         DateTime?
+  lieu        String?
+  description String?
+  lien        String? // publication Instagram, billetterie…
+  creeLe      DateTime  @default(now())
+  modifieLe   DateTime  @updatedAt
+
+  @@index([debut])
+}
+
+enum CategorieArticle {
+  PORTRAIT_ANCIEN
+  PORTRAIT_ETUDIANT
+  VIE_LICENCE
+  ASSOCIATION
+}
+
+model Article {
+  id        String           @id @default(cuid())
+  titre     String
+  slug      String           @unique // partie de l'adresse : /actualites/<slug>
+  categorie CategorieArticle
+  chapo     String? // court résumé sous le titre
+  contenu   String
+  image     String? // chemin d'un fichier téléversé
+  aLaUne    Boolean          @default(false) // grand format en tête de la page Actualités
+  publie    Boolean          @default(false)
+  publieLe  DateTime?
+  creeLe    DateTime         @default(now())
+  modifieLe DateTime         @updatedAt
+
+  @@index([publie, publieLe])
+}
+
+model MembreBureau {
+  id        String   @id @default(cuid())
+  prenom    String
+  nom       String
+  role      String // ex. « Président », « Responsable du pôle Sport »
+  pole      String? // code du pôle (src/lib/site.ts) ; vide = bureau restreint (présidence, trésorerie…)
+  photo     String? // chemin d'un fichier téléversé
+  ordre     Int      @default(0) // ordre d'affichage
+  creeLe    DateTime @default(now())
+  modifieLe DateTime @updatedAt
+}
