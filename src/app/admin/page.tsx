@@ -4,6 +4,7 @@ import { BandeauEspace, Panneau, TitreSection, buttonClasses, classeLisere } fro
 import { prisma } from "@/lib/db";
 import { dateLongue, ilYa, libellePromo } from "@/lib/format";
 import { maintenance } from "@/lib/maintenance";
+import { estPersonnel, libelleFonction } from "@/lib/profils";
 import { LIBELLES_ROLE, estAdministrateur, type Role } from "@/lib/roles";
 import { exigerBureau } from "@/lib/session";
 
@@ -36,7 +37,7 @@ export default async function TableauDeBord() {
     prisma.user.count({ where: filtreComptes }),
     prisma.user.findMany({
       where: filtreComptes,
-      select: { id: true, prenom: true, nom: true, name: true, promoEntree: true, createdAt: true },
+      select: { id: true, prenom: true, nom: true, name: true, promoEntree: true, profil: true, fonction: true, createdAt: true },
       orderBy: { createdAt: "asc" },
       take: 3,
     }),
@@ -93,8 +94,8 @@ export default async function TableauDeBord() {
   const partPublique = fiches ? Math.round((fichesPubliques / fiches) * 100) : 0;
 
   const actionsRapides = [
-    { href: "/admin/actualites/nouveau", libelle: "Nouvel article", icone: Newspaper, visible: true },
-    { href: "/admin/evenements/nouveau", libelle: "Nouvel événement", icone: CalendarPlus, visible: true },
+    { href: "/admin/actualites/nouveau", libelle: "Nouvelle actualité", icone: Newspaper, visible: true },
+    { href: "/admin/actualites/nouveau?type=evenement", libelle: "Nouvel événement", icone: CalendarPlus, visible: true },
     { href: "/admin/invitations", libelle: "Inviter des membres", icone: UserPlus, visible: admin },
     { href: "/admin/personnes/export", libelle: "Exporter les fiches", icone: Download, visible: admin, telechargement: true },
   ].filter((a) => a.visible);
@@ -125,7 +126,11 @@ export default async function TableauDeBord() {
             gauche: (
               <>
                 <b>{[c.prenom, c.nom].filter(Boolean).join(" ") || c.name}</b>
-                {c.promoEntree && <span className="text-ink-soft"> · promotion {libellePromo(c.promoEntree)}</span>}
+                {estPersonnel(c) ? (
+                  <span className="text-ink-soft"> · {libelleFonction(c.fonction)}</span>
+                ) : (
+                  c.promoEntree && <span className="text-ink-soft"> · promotion {libellePromo(c.promoEntree)}</span>
+                )}
               </>
             ),
             droite: `inscription ${ilYa(c.createdAt)}`,

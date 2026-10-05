@@ -61,6 +61,10 @@ export function Champ({
   ...props
 }: BaseChamp & Omit<React.InputHTMLAttributes<HTMLInputElement>, "name" | "defaultValue"> & { defaultValue?: string | number | null }) {
   const erreur = etat?.erreurs?.[nom];
+  // type="url" refuse « www.site.fr » (sans https://) : on garde le clavier adapté mais on laisse
+  // le serveur compléter l'adresse (voir champ.lienFacultatif).
+  const proprietes =
+    props.type === "url" ? { ...props, type: "text", inputMode: "url" as const, autoCapitalize: "none", spellCheck: false } : props;
   return (
     <div>
       <Libelle nom={nom} libelle={libelle} requis={requis} />
@@ -72,7 +76,7 @@ export function Champ({
         aria-invalid={erreur ? true : undefined}
         aria-describedby={[aide && `${nom}-aide`, erreur && `${nom}-erreur`].filter(Boolean).join(" ") || undefined}
         className={classeSaisie}
-        {...props}
+        {...proprietes}
       />
       <AideEtErreur nom={nom} aide={aide} erreur={erreur} />
     </div>

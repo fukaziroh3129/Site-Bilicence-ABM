@@ -117,9 +117,11 @@ export default function MentionsLegales() {
           titre: "Liens vers d’autres sites",
           contenu: (
             <p>
-              Le site renvoie vers des services tiers (HelloAsso pour les adhésions, Instagram, Google Agenda,
+              Le site renvoie vers des services tiers (HelloAsso pour la boutique, Instagram, LinkedIn, Google Agenda,
               offres publiées par des structures extérieures). L’association n’est pas responsable de leur
-              contenu ni de leur politique de confidentialité.
+              contenu ni de leur politique de confidentialité. La page Boutique affiche des modules fournis par
+              HelloAsso&nbsp;: les commandes et les paiements y sont traités par HelloAsso, selon ses propres
+              conditions.
             </p>
           ),
         },

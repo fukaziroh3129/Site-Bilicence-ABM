@@ -110,7 +110,7 @@ export default async function QueSontIlsDevenus({ searchParams }: PageProps<"/pr
       <p className="mx-auto mb-16 max-w-5xl border-t border-bordeaux-700/20 px-4 pt-6 text-sm text-ink-soft sm:px-8">
         Chaque personne a choisi d’apparaître sur cette page et peut retirer son accord à tout moment
         depuis son espace membre. Vous êtes un ancien et souhaitez y figurer&nbsp;?{" "}
-        <Link href="/inscription" className={classeLien}>
+        <Link href="/adhesion" className={classeLien}>
           Créez votre compte
         </Link>
         .

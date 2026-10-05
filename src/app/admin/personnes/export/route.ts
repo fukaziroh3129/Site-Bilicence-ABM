@@ -2,6 +2,7 @@
 import { prisma } from "@/lib/db";
 import { libellePromo } from "@/lib/format";
 import { dictionnaireDomaines } from "@/lib/domaines";
+import { journaliser } from "@/lib/journal";
 import { estAdministrateur } from "@/lib/roles";
 import { obtenirSession } from "@/lib/session";
 
@@ -18,6 +19,7 @@ export async function GET() {
   if (!session || !estAdministrateur(session.user.role) || session.user.statut !== "ACTIF") {
     return new Response("Accès réservé au bureau", { status: 403 });
   }
+  journaliser(session.user, "export CSV de toutes les fiches");
 
   const domaines = await dictionnaireDomaines();
   const personnes = await prisma.personne.findMany({

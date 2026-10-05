@@ -3,6 +3,7 @@
 // interrogée régulièrement par Coolify) et depuis le tableau de bord d'administration.
 import "server-only";
 import { prisma } from "@/lib/db";
+import { supprimerRapportsDe } from "@/lib/rapports";
 
 const INTERVALLE = 12 * 60 * 60 * 1000;
 const DELAI_CONFIRMATION_JOURS = 30;
@@ -25,8 +26,23 @@ export async function maintenance() {
     prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
   ]);
 
+  // Inscriptions refusées par le bureau (politique de confidentialité : 30 jours) : le compte et la fiche
+  // commencée pendant l'attente, avec ses rapports de stage.
+  const refuses = await prisma.user.findMany({
+    where: { statut: "REFUSE", createdAt: { lt: limite } },
+    select: { id: true, personneId: true },
+  });
+  for (const compte of refuses) {
+    await prisma.user.delete({ where: { id: compte.id } });
+    if (compte.personneId) {
+      await supprimerRapportsDe(compte.personneId);
+      await prisma.personne.delete({ where: { id: compte.personneId } }).catch(() => {});
+    }
+  }
+
   return {
     inscriptionsSupprimees: inscriptions.count,
+    refusesSupprimes: refuses.length,
     verificationsSupprimees: verifications.count,
     sessionsSupprimees: sessions.count,
   };

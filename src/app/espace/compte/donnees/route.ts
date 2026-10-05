@@ -14,12 +14,15 @@ export async function GET() {
       prenom: true,
       nom: true,
       promoEntree: true,
+      profil: true,
+      fonction: true,
       statut: true,
       role: true,
       emailVerified: true,
+      twoFactorEnabled: true,
       createdAt: true,
       updatedAt: true,
-      // Le mot de passe (chiffré) n'est volontairement pas exporté.
+      // Le mot de passe et la clé de double authentification (chiffrés) ne sont volontairement pas exportés.
       sessions: { select: { createdAt: true, expiresAt: true, ipAddress: true, userAgent: true } },
       offresDeposees: {
         select: { titre: true, organisation: true, type: true, statut: true, creeLe: true, description: true },

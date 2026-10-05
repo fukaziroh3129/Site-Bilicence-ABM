@@ -4,9 +4,10 @@ import { Suspense } from "react";
 import { deconnecter } from "@/actions/compte";
 import { DialogueRestreint } from "@/components/dialogue-restreint";
 import { NavDeroulante } from "@/components/nav-deroulante";
+import { estPersonnel } from "@/lib/profils";
 import { estDuBureau } from "@/lib/roles";
 import { exigerCompte } from "@/lib/session";
-import { navigationMembres } from "@/lib/site";
+import { navigationMembres, type EntreeMenu } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: { default: "Espace membres", template: "%s — Espace membres ABM" },
@@ -18,10 +19,18 @@ export default async function LayoutEspace({ children }: LayoutProps<"/espace">)
   // Chaque page réservée aux membres validés appelle exigerMembreActif().
   const { user } = await exigerCompte();
   const enAttente = user.statut !== "ACTIF";
+  // Le personnel de l'université n'a pas de fiche : pas de lien « Ma fiche ».
+  const rubriques: EntreeMenu[] = estPersonnel(user)
+    ? navigationMembres.map((e) => ("liens" in e ? { ...e, liens: e.liens.filter((l) => l.href !== "/espace/ma-fiche") } : e))
+    : [...navigationMembres];
+  // Drive des cours : adresse gardée hors du code public (variable LIEN_DRIVE) et donnée aux seuls
+  // membres validés, placée avant « Mon profil ».
+  const lienDrive = process.env.LIEN_DRIVE;
+  if (lienDrive && !enAttente) {
+    rubriques.splice(rubriques.length - 1, 0, { href: lienDrive, label: "Drive", icone: "drive", externe: true });
+  }
   const entrees =
-    estDuBureau(user.role) && !enAttente
-      ? [...navigationMembres, { href: "/admin", label: "Administration", icone: "admin" }]
-      : navigationMembres;
+    estDuBureau(user.role) && !enAttente ? [...rubriques, { href: "/admin", label: "Administration", icone: "admin" }] : rubriques;
 
   return (
     <>

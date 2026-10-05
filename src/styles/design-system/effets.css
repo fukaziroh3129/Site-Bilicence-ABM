@@ -231,6 +231,48 @@
   }
 }
 
+/* ─── Bouton « Espace membres / Adhérer » : libellé qui alterne en glissant ─────
+   La pile répète le premier libellé à la fin pour boucler sans saut ; arrêtée quand la boîte est ouverte.
+   Sans animation (préférence système), le bouton reste sur « Espace membres ». */
+
+.libelle-alterne {
+  display: inline-block;
+  height: 1.25em;
+  overflow: hidden;
+}
+.libelle-alterne-pile {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+.libelle-alterne-pile > span {
+  height: 1.25em;
+  line-height: 1.25em;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .libelle-alterne-pile {
+    animation: libelle-alterne 7s var(--ease-premium) infinite;
+  }
+  .bouton-membres:hover .libelle-alterne-pile,
+  .bouton-membres:focus-within .libelle-alterne-pile,
+  .bouton-membres[data-ouvert="true"] .libelle-alterne-pile {
+    animation-play-state: paused;
+  }
+}
+@keyframes libelle-alterne {
+  0%,
+  42% {
+    transform: translateY(0);
+  }
+  50%,
+  92% {
+    transform: translateY(-1.25em);
+  }
+  100% {
+    transform: translateY(-2.5em);
+  }
+}
+
 /* ─── Bandeau d'accueil : animations CSS, jouées dès l'affichage (avant le JavaScript) ─── */
 
 @media (prefers-reduced-motion: no-preference) {

@@ -38,8 +38,25 @@ export function SiteFooter() {
             </li>
             {site.liens.instagram && (
               <li>
-                <a href={site.liens.instagram} className="lien-anime eyebrow text-white/76 hover:text-white">
+                <a
+                  href={site.liens.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="lien-anime eyebrow text-white/76 hover:text-white"
+                >
                   Instagram
+                </a>
+              </li>
+            )}
+            {site.liens.linkedin && (
+              <li>
+                <a
+                  href={site.liens.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="lien-anime eyebrow text-white/76 hover:text-white"
+                >
+                  LinkedIn
                 </a>
               </li>
             )}

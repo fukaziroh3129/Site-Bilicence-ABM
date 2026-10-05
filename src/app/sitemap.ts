@@ -6,7 +6,7 @@ import { URL_SITE } from "@/lib/url";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const pages = ["", "/la-formation", "/actualites", "/promotions", "/erasmus", "/bureau", "/adhesion", "/contact", "/mentions-legales", "/confidentialite", "/vos-donnees"];
+  const pages = ["", "/la-formation", "/actualites", "/promotions", "/erasmus", "/bureau", "/boutique", "/adhesion", "/contact", "/mentions-legales", "/confidentialite", "/vos-donnees"];
 
   const articles = await prisma.article
     .findMany({ where: { publie: true }, select: { slug: true, modifieLe: true } })

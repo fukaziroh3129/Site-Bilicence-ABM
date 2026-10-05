@@ -9,8 +9,9 @@ import {
   Archive,
   BookUser,
   BriefcaseBusiness,
-  CalendarDays,
   ChevronDown,
+  ExternalLink,
+  FolderOpen,
   GalleryHorizontalEnd,
   Globe,
   House,
@@ -20,6 +21,7 @@ import {
   Lock,
   Menu,
   Newspaper,
+  Share2,
   ShieldCheck,
   Tags,
   UserCog,
@@ -41,8 +43,8 @@ const ICONES: Record<string, LucideIcon> = {
   parcours: GalleryHorizontalEnd,
   stages: Archive,
   offres: BriefcaseBusiness,
-  evenements: CalendarDays,
   erasmus: Globe,
+  drive: FolderOpen,
   fiche: IdCard,
   compte: UserCog,
   admin: ShieldCheck,
@@ -54,6 +56,7 @@ const ICONES: Record<string, LucideIcon> = {
   etablissements: Landmark,
   actualites: Newspaper,
   bureau: UsersRound,
+  reseaux: Share2,
 };
 
 /** Événement écouté par DialogueRestreint. */
@@ -98,6 +101,14 @@ function Lien({
       >
         {children}
       </button>
+    );
+  }
+  if (lien.externe) {
+    return (
+      <a href={lien.href} target="_blank" rel="noopener noreferrer" className={className} onClick={onChoisir}>
+        {children}
+        <span className="sr-only"> (s’ouvre dans un nouvel onglet)</span>
+      </a>
     );
   }
   return (
@@ -288,6 +299,7 @@ export function NavDeroulante({
                 className={`${classeOnglet} border-transparent text-ink-soft hover:text-bordeaux-700`}
               >
                 {entree.label}
+                {entree.externe && <ExternalLink size={13} aria-hidden />}
               </Lien>
             </li>
           ),
@@ -342,6 +354,7 @@ export function NavDeroulante({
                           >
                             <Icone size={20} aria-hidden className="shrink-0 text-bordeaux-700" />
                             <span className="flex-1">{lien.label}</span>
+                            {lien.externe && !bloque && <ExternalLink size={15} aria-hidden className="text-ink-soft" />}
                             {bloque && <Lock size={15} aria-label="réservé aux membres validés" className="text-ink-soft" />}
                           </Lien>
                         </li>

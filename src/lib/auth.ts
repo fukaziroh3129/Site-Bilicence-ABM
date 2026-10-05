@@ -1,13 +1,15 @@
 // Configuration de l'authentification (Better Auth) : inscription, connexion, sessions,
 // vérification de l'adresse e-mail, mot de passe oublié, suppression de compte.
 import "server-only";
-import { betterAuth } from "better-auth";
+import { APIError, betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { twoFactor } from "better-auth/plugins";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { adresseSite, emailsAdmins, envoyerEmail } from "@/lib/email";
+import { adresseSite, alerteSecurite, emailsAdmins, envoyerEmail } from "@/lib/email";
 import { PREMIERE_PROMO } from "@/lib/format";
+import { CODES_FONCTION, PROFILS, estPersonnel, libelleFonction } from "@/lib/profils";
 import { supprimerRapportsDe } from "@/lib/rapports";
 
 /**
@@ -46,6 +48,14 @@ export const auth = betterAuth({
           "",
           "Si vous n’êtes pas à l’origine de cette demande, ignorez ce message.",
         ].join("\n"),
+      });
+    },
+    // Mot de passe changé par un lien (oubli, ou lien envoyé par le bureau) : la personne est prévenue.
+    onPasswordReset: async ({ user }) => {
+      void envoyerEmail({
+        a: user.email,
+        sujet: "Votre mot de passe a été modifié",
+        texte: alerteSecurite("Le mot de passe de votre compte sur le site ABM vient d’être changé à l’aide d’un lien de réinitialisation."),
       });
     },
   },
@@ -92,12 +102,14 @@ export const auth = betterAuth({
     // Une fois l'adresse confirmée, on prévient le bureau qu'un compte attend sa validation.
     afterEmailVerification: async (user, request) => {
       // Aussi appelé après un changement d'adresse : on ne prévient le bureau que pour un nouveau compte.
-      if ((user as { statut?: string }).statut !== "EN_ATTENTE" || estChangementEmail(request)) return;
+      const compte = user as { statut?: string; profil?: string; fonction?: string | null };
+      if (compte.statut !== "EN_ATTENTE" || estChangementEmail(request)) return;
+      const qui = estPersonnel(compte) ? `, personnel de l’université (${libelleFonction(compte.fonction)}),` : "";
       void envoyerEmail({
         a: await emailsAdmins(),
         sujet: "Nouveau compte à valider",
         texte: [
-          `${user.name} (${user.email}) vient de créer un compte.`,
+          `${user.name} (${user.email})${qui} vient de créer un compte.`,
           "",
           "Pour le valider ou le refuser :",
           adresseSite("/admin/comptes"),
@@ -117,6 +129,9 @@ export const auth = betterAuth({
         required: false,
         validator: { input: z.number().int().min(PREMIERE_PROMO).max(new Date().getFullYear()).nullish() },
       },
+      // Type de compte (src/lib/profils.ts). Choisir « personnel » ne donne aucun droit : le bureau valide toujours.
+      profil: { type: ["ALUMNI", "PERSONNEL"], defaultValue: "ALUMNI", validator: { input: z.enum(PROFILS) } },
+      fonction: { type: "string", required: false, validator: { input: z.enum(CODES_FONCTION).nullish() } },
       // Champs que l'utilisateur ne peut pas modifier lui-même (input: false)
       statut: { type: ["INVITE", "EN_ATTENTE", "ACTIF", "REFUSE"], defaultValue: "EN_ATTENTE", input: false },
       role: { type: ["MEMBRE", "ANIMATEUR", "ADMIN", "PROPRIETAIRE"], defaultValue: "MEMBRE", input: false },
@@ -131,8 +146,12 @@ export const auth = betterAuth({
       beforeDelete: async (user) => {
         const compte = await prisma.user.findUnique({
           where: { id: user.id },
-          select: { personneId: true },
+          select: { personneId: true, role: true },
         });
+        // Le site doit toujours avoir un propriétaire : il transmet d'abord son titre (Administration → Comptes).
+        if (compte?.role === "PROPRIETAIRE") {
+          throw new APIError("FORBIDDEN", { code: "PROPRIETAIRE", message: "Le propriétaire doit d’abord transmettre son titre." });
+        }
         if (compte?.personneId) {
           await supprimerRapportsDe(compte.personneId);
           await prisma.personne.delete({ where: { id: compte.personneId } });
@@ -141,7 +160,7 @@ export const auth = betterAuth({
     },
   },
 
-  // Refuse les noms anormalement longs envoyés directement à l'API.
+  // Refuse les noms anormalement longs (protection en plus des formulaires du site).
   databaseHooks: {
     user: {
       create: {
@@ -150,14 +169,28 @@ export const auth = betterAuth({
           return { data: user };
         },
       },
+      update: {
+        before: async (user) => {
+          if (user.name !== undefined && (typeof user.name !== "string" || user.name.length > 170)) return false;
+          return { data: user };
+        },
+      },
     },
   },
 
-  // Limite de requêtes de l'API d'authentification (activée aussi en développement).
+  // Limite de requêtes de l'API d'authentification (activée aussi en développement). Seuls les liens reçus
+  // par e-mail passent par l'API HTTP (src/app/api/auth/[...all]/route.ts) ; les formulaires du site ont
+  // leurs propres limites (src/lib/limite.ts).
   rateLimit: { enabled: true, window: 60, max: 60 },
 
   // Permet aux « server actions » de Next.js de poser les cookies de session.
-  plugins: [nextCookies()],
+  plugins: [
+    // Double authentification facultative (« Mon compte ») : code à 6 chiffres d'une application
+    // d'authentification, ou code de secours. Tentatives limitées par le plugin.
+    twoFactor({ issuer: "ABM" }),
+    // Toujours en dernier.
+    nextCookies(),
+  ],
 });
 
 export type Session = typeof auth.$Infer.Session;

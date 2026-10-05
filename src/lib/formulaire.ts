@@ -67,13 +67,15 @@ export const champ = {
       .refine((v) => !v || z.email().safeParse(v).success, "Adresse e-mail invalide.")
       .transform((v) => (v ? v : null)),
 
+  /** Adresse web facultative ; « www.site.fr » est accepté et complété en « https://www.site.fr ». */
   lienFacultatif: () =>
     z
       .string()
       .trim()
       .max(500)
       .optional()
-      .refine((v) => !v || /^https?:\/\/\S+$/.test(v), "L’adresse doit commencer par https://")
+      .transform((v) => (v && !/^[a-z][a-z0-9+.-]*:/i.test(v) ? `https://${v}` : v))
+      .refine((v) => !v || /^https?:\/\/[^\s/.]+\.\S+$/i.test(v), "Adresse web invalide (exemple : https://www.linkedin.com/in/votre-nom).")
       .transform((v) => (v ? v : null)),
 
   entier: (min: number, max: number) =>

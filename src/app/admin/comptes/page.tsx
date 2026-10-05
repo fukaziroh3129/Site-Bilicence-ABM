@@ -6,6 +6,7 @@ import { BoutonSupprimer } from "@/components/bouton-supprimer";
 import { EnTeteConsole, Panneau, Pastille, Vide, buttonClasses, classeLien, classeLisere, classeSaisie, classesTableau } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { dateCourte, ilYa, libellePromo, normaliser } from "@/lib/format";
+import { estPersonnel, libelleFonction } from "@/lib/profils";
 import { LIBELLES_ROLE, estAdministrateur, peutChangerRole, peutGererCompte, type Role } from "@/lib/roles";
 import { exigerBureau } from "@/lib/session";
 
@@ -62,13 +63,45 @@ export default async function Comptes() {
       <Panneau titre="À valider" compte={enAttente.length} compteAccent corps={false}>
         <p className="border-b border-bordeaux-700/10 px-5 py-3 text-sm text-ink-soft sm:px-6">
           Vérifiez que la personne fait bien partie de la bi-licence. Si sa fiche existe déjà (import de l’Excel, saisie par le
-          bureau), rattachez le compte à cette fiche plutôt que d’en créer une nouvelle.
+          bureau), rattachez le compte à cette fiche plutôt que d’en créer une nouvelle. Pour le <b>personnel de
+          l’université</b>, vérifiez qu’il s’agit bien d’un membre de l’université (adresse universitaire, fonction) : ce
+          compte n’a pas de fiche.
         </p>
         {enAttente.length === 0 ? (
           <Vide>Aucun compte en attente.</Vide>
         ) : (
           <ul className="divide-y divide-bordeaux-700/10">
             {enAttente.map((u) => {
+              if (estPersonnel(u)) {
+                return (
+                  <li key={u.id} className={`px-5 py-4 sm:px-6 ${classeLisere}`}>
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                      <p className="flex flex-wrap items-center gap-2 font-semibold">
+                        {u.prenom} {u.nom}
+                        <Pastille accent>Personnel de l’université</Pastille>
+                        <span className="font-normal text-ink-soft">{libelleFonction(u.fonction)}</span>
+                      </p>
+                      <p className="text-sm text-ink-soft">
+                        {u.email} · inscription {ilYa(u.createdAt)}
+                      </p>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <form action={validerCompte}>
+                        <input type="hidden" name="userId" value={u.id} />
+                        <button type="submit" className={buttonClasses("primary", "petit")}>
+                          <Check size={14} aria-hidden /> Valider
+                        </button>
+                      </form>
+                      <form action={refuserCompte}>
+                        <input type="hidden" name="userId" value={u.id} />
+                        <button type="submit" className={`${classeBoutonDiscret} py-2`}>
+                          Refuser
+                        </button>
+                      </form>
+                    </div>
+                  </li>
+                );
+              }
               const memeNom = fichesLibres.filter((f) => normaliser(f.nom) === normaliser(u.nom));
               const suggestion = memeNom.find((f) => normaliser(f.prenom) === normaliser(u.prenom));
               const autres = fichesLibres.filter((f) => !memeNom.includes(f));
@@ -179,6 +212,11 @@ export default async function Comptes() {
                         <span className="font-semibold">{`${u.prenom} ${u.nom}`}</span>
                       )}
                       {estMoi && <span className="ml-2 text-xs text-ink-soft">(vous)</span>}
+                      {estPersonnel(u) && (
+                        <span className="ml-2 text-xs text-ink-soft" title={libelleFonction(u.fonction)}>
+                          · Personnel de l’université
+                        </span>
+                      )}
                     </td>
                     <td className={`${classesTableau.td} text-ink-soft`}>{u.email}</td>
                     <td className={classesTableau.td}>
@@ -222,7 +260,7 @@ export default async function Comptes() {
                             action={supprimerCompte}
                             champs={{ userId: u.id }}
                             libelle="Supprimer le compte"
-                            confirmation="Supprimer ce compte ? La fiche de la personne est conservée."
+                            confirmation={estPersonnel(u) ? "Supprimer ce compte ?" : "Supprimer ce compte ? La fiche de la personne est conservée."}
                           />
                         )}
                         {roles.length === 0 && !gerable && !transfert && <span className="text-xs text-ink-soft">—</span>}
@@ -268,7 +306,10 @@ export default async function Comptes() {
                   <b>
                     {u.prenom} {u.nom}
                   </b>{" "}
-                  <span className="text-ink-soft">· {u.email}</span>
+                  <span className="text-ink-soft">
+                    · {u.email}
+                    {estPersonnel(u) && " · personnel de l’université"}
+                  </span>
                 </span>
                 <div className="flex items-center gap-4">
                   <form action={validerCompte}>

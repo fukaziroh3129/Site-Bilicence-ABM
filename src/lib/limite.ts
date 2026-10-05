@@ -7,10 +7,25 @@ import { headers } from "next/headers";
 type Fenetre = { debut: number; nombre: number };
 const compteurs = new Map<string, Fenetre>();
 
-/** Adresse IP du visiteur (transmise par le proxy de Coolify), ou « inconnue ». */
+/**
+ * Adresse IP du visiteur, ou « inconnue ». On prend la DERNIÈRE adresse de X-Forwarded-For : c'est celle
+ * qu'ajoute le proxy de Coolify (Traefik), juste devant le site. Les premières sont envoyées par le
+ * navigateur et peuvent être inventées pour contourner les limites. (Si un autre proxy, comme Cloudflare,
+ * est placé un jour devant Coolify, il faudra lire son propre en-tête.)
+ */
 export async function adresseIp() {
   const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "inconnue";
+  return h.get("x-forwarded-for")?.split(",").at(-1)?.trim() || h.get("x-real-ip")?.trim() || "inconnue";
+}
+
+/**
+ * Limite à la fois par adresse IP et par compte visé (adresse e-mail) : un robot qui change d'IP à chaque
+ * essai reste bloqué sur un même compte, et personne ne peut bombarder une boîte de messages.
+ */
+export async function autoriserPour(action: string, email: string, parIp: [number, number], parEmail: [number, number]) {
+  const ip = autoriser(`${action}:${await adresseIp()}`, ...parIp);
+  const compte = autoriser(`${action}:email:${email.toLowerCase()}`, ...parEmail);
+  return ip && compte;
 }
 
 /**

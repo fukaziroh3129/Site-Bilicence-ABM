@@ -114,7 +114,6 @@ async function main() {
       await prisma.user.deleteMany();
       await prisma.personne.deleteMany(); // supprime aussi formations, expériences, séjours et notes
       await prisma.etablissement.deleteMany();
-      await prisma.evenement.deleteMany();
       await prisma.article.deleteMany();
       await prisma.membreBureau.deleteMany();
       // Images téléversées pendant les essais (actualités, bureau) et rapports de stage de démonstration

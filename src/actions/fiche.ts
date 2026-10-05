@@ -15,6 +15,7 @@ import { champ, valider, valeursDe, type EtatFormulaire } from "@/lib/formulaire
 import { MAX_DOMAINES_PAR_FICHE, chargerDomaines, trouverOuAjouterDomaine } from "@/lib/domaines";
 import { CODES_PAYS, trouverOuAjouterUniversite, trouverOuCreerEtablissement } from "@/lib/liste-etablissements";
 import { lireMotif, motifSuppression, noterModification } from "@/lib/notes";
+import { estPersonnel } from "@/lib/profils";
 import { estDuBureau } from "@/lib/roles";
 import { exigerCompte } from "@/lib/session";
 
@@ -44,6 +45,8 @@ function rafraichir(personneId: string) {
 export async function creerMaFiche() {
   // Possible dès l'inscription (compte en attente) : la fiche reste cachée jusqu'à la validation.
   const { user } = await exigerCompte();
+  // Le personnel de l'université n'a jamais de fiche (src/lib/profils.ts).
+  if (estPersonnel(user)) redirect("/espace");
   if (user.personneId) redirect("/espace/ma-fiche");
 
   const personne = await prisma.personne.create({

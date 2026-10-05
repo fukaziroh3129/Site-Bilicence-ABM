@@ -25,11 +25,29 @@ function obtenirTransport() {
   return transport;
 }
 
-export async function envoyerEmail({ a, sujet, texte, copieCachee = false, repondreA }: Email) {
+/**
+ * Envoie un e-mail. Ne lève jamais d'erreur (beaucoup d'appels sont faits sans attendre, avec `void`) :
+ * un échec est seulement noté dans le journal du serveur.
+ */
+export async function envoyerEmail(email: Email) {
+  try {
+    await envoyer(email);
+  } catch (erreur) {
+    console.error(`E-mail non envoyé (« ${email.sujet} ») :`, erreur instanceof Error ? erreur.message : erreur);
+  }
+}
+
+async function envoyer({ a, sujet, texte, copieCachee = false, repondreA }: Email) {
   const destinataires = Array.isArray(a) ? a : [a];
   if (destinataires.length === 0) return;
 
   if (!process.env.SMTP_HOST) {
+    // En production, jamais le contenu dans le journal : il contient des liens de connexion
+    // (mot de passe, invitation) qui donneraient accès aux comptes.
+    if (process.env.NODE_ENV === "production") {
+      console.error(`E-mail non envoyé (« ${sujet} ») : SMTP non configuré (variable SMTP_HOST).`);
+      return;
+    }
     console.log(
       [
         "",
@@ -65,6 +83,20 @@ export async function envoyerEmail({ a, sujet, texte, copieCachee = false, repon
 /** Adresse publique du site, pour construire les liens dans les e-mails. */
 export function adresseSite(chemin = "") {
   return `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}${chemin}`;
+}
+
+/** Texte d'un e-mail d'alerte (mot de passe ou adresse modifiés) : que faire si ce n'est pas vous. */
+export function alerteSecurite(quoi: string) {
+  return [
+    "Bonjour,",
+    "",
+    quoi,
+    "",
+    "Si c’est bien vous, vous n’avez rien à faire.",
+    "Sinon, choisissez tout de suite un nouveau mot de passe et prévenez le bureau :",
+    adresseSite("/mot-de-passe-oublie"),
+    adresseSite("/contact"),
+  ].join("\n");
 }
 
 /** E-mails des membres du bureau (animateurs, administrateurs, propriétaire) : comptes et offres à traiter. */

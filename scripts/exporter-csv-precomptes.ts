@@ -10,7 +10,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, sansAccent } from "./compilation-donnees";
-import { universiteDe } from "./universites-erasmus";
+import { codePays, universiteDe } from "./universites-erasmus";
 
 const argv = process.argv.slice(2);
 const option = (nom: string) => {
@@ -61,7 +61,7 @@ async function main() {
         p.ville,
         u?.nom,
         u?.ville,
-        s?.pays,
+        s ? (codePays(s.pays) ?? s.pays) : null, // code à deux lettres : « Rep.Tchèque » → CZ
       ]
         .map(csv)
         .join(";"),

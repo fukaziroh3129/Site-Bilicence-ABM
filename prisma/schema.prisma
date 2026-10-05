@@ -31,6 +31,12 @@ enum RoleCompte {
   PROPRIETAIRE // président de l'association : tous les droits, nomme et retire les administrateurs
 }
 
+// Type de compte (src/lib/profils.ts), choisi à l'adhésion.
+enum ProfilCompte {
+  ALUMNI // étudiant ou ancien de la bi-licence : a une fiche (annuaire, « Que sont-ils devenus ? »)
+  PERSONNEL // personnel de l'université (enseignants, direction, administration) : jamais de fiche
+}
+
 model User {
   id            String   @id
   name          String
@@ -44,8 +50,10 @@ model User {
   prenom      String @default("")
   nom         String @default("")
   promoEntree Int?
+  profil      ProfilCompte @default(ALUMNI)
+  fonction    String? // personnel seulement : code de FONCTIONS_PERSONNEL (src/lib/profils.ts)
 
-  statut     StatutCompte @default(EN_ATTENTE)
+  statut    StatutCompte @default(EN_ATTENTE)
   role       RoleCompte   @default(MEMBRE)
   // Fiche alumni rattachée par le bureau lors de la validation
   personneId String?      @unique
@@ -54,8 +62,12 @@ model User {
   // Pré-compte (statut INVITE) : date du dernier envoi du lien d'invitation
   invitationEnvoyeeLe DateTime?
 
+  // Double authentification facultative (plugin twoFactor de Better Auth, « Mon compte »)
+  twoFactorEnabled Boolean? @default(false)
+
   sessions              Session[]
   accounts              Account[]
+  twoFactors            TwoFactor[]
   offresDeposees        Offre[]
   notesRedigees         NoteModification[]
   etablissementsAjoutes Etablissement[]
@@ -97,6 +109,23 @@ model Account {
 
   @@index([userId])
   @@map("account")
+}
+
+// Double authentification : secret de l'application d'authentification et codes de secours, chiffrés par
+// Better Auth avec BETTER_AUTH_SECRET. Jamais exportés ni affichés.
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean?  @default(true)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
 }
 
 model Verification {
@@ -366,18 +395,11 @@ model Offre {
   @@index([statut])
 }
 
-model Evenement {
-  id          String    @id @default(cuid())
-  titre       String
-  debut       DateTime
-  fin         DateTime?
-  lieu        String?
-  description String?
-  lien        String? // publication Instagram, billetterie…
-  creeLe      DateTime  @default(now())
-  modifieLe   DateTime  @updatedAt
-
-  @@index([debut])
+// Une publication est soit une actualité (article), soit un événement (avec date et lieu).
+// Les deux partagent la même table, le même formulaire et la même page publique (/actualites).
+enum TypePublication {
+  ACTUALITE
+  EVENEMENT
 }
 
 enum CategorieArticle {
@@ -389,17 +411,45 @@ enum CategorieArticle {
 
 model Article {
   id        String           @id @default(cuid())
+  type      TypePublication  @default(ACTUALITE)
   titre     String
   slug      String           @unique // partie de l'adresse : /actualites/<slug>
   categorie CategorieArticle
   chapo     String? // court résumé sous le titre
-  contenu   String
+  contenu   String? // obligatoire pour une actualité, facultatif pour un événement
   image     String? // chemin d'un fichier téléversé
   aLaUne    Boolean          @default(false) // grand format en tête de la page Actualités
   publie    Boolean          @default(false)
   publieLe  DateTime?
+  // Événement seulement
+  debut     DateTime?
+  fin       DateTime?
+  lieu      String?
+  lien      String? // publication Instagram, billetterie…
   creeLe    DateTime         @default(now())
   modifieLe DateTime         @updatedAt
+
+  @@index([publie, publieLe])
+  @@index([type, debut])
+}
+
+enum ReseauSocial {
+  INSTAGRAM
+  LINKEDIN
+}
+
+// Vignette d'un post Instagram ou LinkedIn affichée sur l'accueil (section « Suivez-nous »).
+// Saisie à la main par le bureau : le site ne charge rien depuis Instagram ni LinkedIn.
+model PostSocial {
+  id        String       @id @default(cuid())
+  reseau    ReseauSocial
+  lien      String // adresse du post, sur le domaine du réseau choisi
+  legende   String // courte description affichée sous le visuel
+  image     String? // chemin d'un fichier téléversé (jamais une image copiée depuis le réseau)
+  publie    Boolean      @default(false)
+  publieLe  DateTime     @default(now()) // les plus récents s'affichent en premier
+  creeLe    DateTime     @default(now())
+  modifieLe DateTime     @updatedAt
 
   @@index([publie, publieLe])
 }

@@ -53,16 +53,24 @@ export default async function Contact({ searchParams }: PageProps<"/contact">) {
               </p>
             </div>
           </div>
-          {site.liens.instagram && (
+          {(site.liens.instagram || site.liens.linkedin) && (
             <div className="flex items-start gap-4">
               <CalendarDays size={22} strokeWidth={1.5} className="mt-1 shrink-0 text-bordeaux-700" aria-hidden />
               <div>
                 <h2 className="font-display text-xl font-bold text-bordeaux-700">Les événements</h2>
                 <p className="mt-1 text-sm text-ink-soft">
                   Photos et annonces sur{" "}
-                  <a href={site.liens.instagram} className={classeLien} target="_blank" rel="noopener noreferrer">
-                    Instagram
-                  </a>
+                  {site.liens.instagram && (
+                    <a href={site.liens.instagram} className={classeLien} target="_blank" rel="noopener noreferrer">
+                      Instagram
+                    </a>
+                  )}
+                  {site.liens.instagram && site.liens.linkedin && " et "}
+                  {site.liens.linkedin && (
+                    <a href={site.liens.linkedin} className={classeLien} target="_blank" rel="noopener noreferrer">
+                      LinkedIn
+                    </a>
+                  )}
                   .
                 </p>
               </div>

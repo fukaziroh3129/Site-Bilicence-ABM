@@ -16,9 +16,9 @@ export default async function Connexion({ searchParams }: PageProps<"/connexion"
       titre="Connexion à l’espace membres"
       intro={
         <>
-          Pas encore de compte&nbsp;?{" "}
-          <Link href="/inscription" className={classeLien}>
-            Créer un compte
+          Pas encore membre&nbsp;?{" "}
+          <Link href="/adhesion" className={classeLien}>
+            Adhérer
           </Link>
         </>
       }

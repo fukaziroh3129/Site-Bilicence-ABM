@@ -17,7 +17,7 @@ export default function Confidentialite() {
     <PageLegale
       titre="Politique de confidentialité"
       intro="Ce que nous collectons, pourquoi, qui y a accès et combien de temps, conformément au Règlement général sur la protection des données (RGPD)."
-      miseAJour={new Date("2026-10-03T12:00:00Z")}
+      miseAJour={new Date("2026-10-05T12:00:00Z")}
       sections={[
         {
           id: "responsable",
@@ -37,6 +37,7 @@ export default function Confidentialite() {
               entetes={["Catégorie", "Données"]}
               lignes={[
                 ["Compte", "Prénom, nom, adresse e-mail, promotion, mot de passe (chiffré, jamais stocké en clair), rôle et statut du compte."],
+                ["Compte du personnel de l’université", "Prénom, nom, adresse e-mail, fonction (enseignant, responsable de la formation, direction, administration…), mot de passe (chiffré), rôle et statut du compte. Ces comptes n’ont pas de fiche : ils n’apparaissent ni dans l’annuaire ni sur le site public."],
                 ["Fiche", "Situation actuelle, ville, domaines, présentation, conseil aux étudiants, formations suivies, séjours Erasmus (université, période, descriptif, retour d’expérience), expériences (structure, poste, dates, missions, façon dont le stage a été obtenu, rapport de stage en PDF)."],
                 ["Contact d’un stage", "Si vous choisissez de le partager : fonction et organisme de la personne qui vous a aidé à obtenir le stage ; son nom et son moyen de contact seulement si vous déclarez avoir son accord."],
                 ["Coordonnées facultatives", "Profil LinkedIn, e-mail de contact, téléphone : affichés aux membres uniquement si vous l’avez choisi."],
@@ -46,6 +47,26 @@ export default function Confidentialite() {
                 ["Données techniques", "Adresse IP et navigateur associés à vos sessions de connexion, utilisés pour la sécurité."],
               ]}
             />
+          ),
+        },
+        {
+          id: "origine",
+          titre: "Données qui ne viennent pas de vous",
+          contenu: (
+            <>
+              <p>
+                Pour les anciens qui n’ont pas encore de compte, le bureau a repris les informations du fichier de suivi des
+                poursuites d’études de la bi-licence et de la liste de ses adhérents (prénom, nom, promotion, master suivi,
+                séjour Erasmus et, le cas échéant, e-mail, téléphone et ville). Ces fiches sont visibles des seuls membres
+                connectés, jamais du public sans votre accord.
+              </p>
+              <p>
+                Base légale : l’intérêt légitime de l’association à faire vivre le réseau de ses anciens (article 6.1.f du RGPD).
+                Les personnes dont nous connaissons l’adresse e-mail reçoivent une invitation qui le leur explique. Vous pouvez à
+                tout moment vous opposer à la présence de votre fiche, la faire corriger ou supprimer, sans avoir à créer de
+                compte : écrivez à {contact} (objet « Mes données personnelles »).
+              </p>
+            </>
           ),
         },
         {
@@ -105,6 +126,10 @@ export default function Confidentialite() {
                 l’adresse e-mail n’a pas été confirmée.
               </li>
               <li>
+                <strong>Inscriptions refusées par le bureau</strong> : le compte et la fiche commencée sont supprimés
+                automatiquement 30 jours après l’inscription.
+              </li>
+              <li>
                 <strong>Sessions de connexion</strong> : 7 jours, renouvelés lorsque vous utilisez le site.
               </li>
               <li>
@@ -123,8 +148,10 @@ export default function Confidentialite() {
           contenu: (
             <p>
               Mots de passe chiffrés (algorithme scrypt), connexion chiffrée (HTTPS), vérification de l’adresse e-mail,
-              validation manuelle de chaque compte par le bureau, limitation des tentatives de connexion, accès à
-              l’administration réservé au bureau, sauvegardes régulières de la base de données.
+              validation manuelle de chaque compte par le bureau, limitation des tentatives de connexion, double
+              authentification facultative (code d’une application, clé chiffrée), alerte par e-mail lors d’un changement
+              de mot de passe ou d’adresse, accès à l’administration réservé au bureau, sauvegardes régulières de la base
+              de données.
             </p>
           ),
         },
@@ -158,8 +185,10 @@ export default function Confidentialite() {
           titre: "Cookies",
           contenu: (
             <p>
-              Un seul cookie est utilisé : le cookie de session de l’espace membres, strictement nécessaire à la
-              connexion (exempté de consentement). Aucun outil de mesure d’audience ni de publicité. Les polices de
+              Seuls des cookies strictement nécessaires à la connexion sont utilisés (exemptés de consentement) : le
+              cookie de session de l’espace membres et, si vous avez activé la double authentification, un cookie
+              temporaire pendant la saisie du code (10 minutes) et, si vous le demandez, un cookie qui retient cet
+              appareil comme « de confiance » pendant 30 jours. Aucun outil de mesure d’audience ni de publicité. Les polices de
               caractères sont servies par notre propre serveur : aucune donnée n’est transmise à Google lors de votre
               visite.
             </p>

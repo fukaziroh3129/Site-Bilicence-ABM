@@ -62,6 +62,25 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   signature (`verifierImage`, asynchrone) ; exports CSV neutralisent les formules Excel.
   En-têtes HTTP dans `next.config.ts`. Next.js épinglé en 16.3.8 (failles critiques avant).
   `npm audit --omit=dev` : restent `deepmerge-ts` (outil Prisma en ligne de commande, non exposé).
+- **Sécurité (audit complet du 5 octobre 2026 ; le dépôt GitHub est PUBLIC)** :
+  - L'API HTTP de Better Auth est FERMÉE (`src/app/api/auth/[...all]/route.ts`) : seuls les liens d'e-mail
+    (GET `verify-email`, `reset-password/<jeton>`, `error`) passent. Tout appel à Better Auth se fait côté
+    serveur (`auth.api.*` dans `src/actions/`) ; ne jamais ajouter `createAuthClient` ni rouvrir la route,
+    sinon on contourne mot de passe exigé, limites et consentement.
+  - Limites : `autoriser()` / `autoriserPour(action, email, [max, s] par IP, [max, s] par e-mail)` ;
+    `adresseIp()` lit la DERNIÈRE IP de `X-Forwarded-For` (celle du proxy Coolify, pas celle du navigateur).
+  - Double authentification facultative (plugin `twoFactor`, table `TwoFactor`) : activation / désactivation
+    dans « Mon compte » (`preparerDoubleAuth`, `confirmerDoubleAuth`, `desactiverDoubleAuth`), 2e étape de
+    connexion `/connexion/verification` (`verifierCodeConnexion`). `nextCookies()` reste le DERNIER plugin.
+  - E-mails : `envoyerEmail` ne lève jamais d'erreur et, en production sans SMTP, n'écrit jamais le contenu
+    (liens de connexion) dans le journal. Alertes `alerteSecurite()` (mot de passe, adresse, 2FA modifiés).
+  - Le propriétaire ne peut pas supprimer son compte (`beforeDelete`) : il transmet d'abord son titre.
+  - Actions sensibles du bureau tracées par `journaliser()` (`src/lib/journal.ts`) : à appeler dans toute
+    nouvelle action de ce type (rôle, suppression, export, lien donnant accès à un compte).
+  - CSP stricte (`next.config.ts`) : tout nouveau service externe (cadre, script, image distante) doit y être
+    ajouté explicitement. Rien de privé dans `src/lib/site.ts` (importé côté navigateur) : le Drive des cours
+    vient de la variable `LIEN_DRIVE`, ajoutée au menu des seuls membres validés (`src/app/espace/layout.tsx`).
+  - Comptes REFUSÉS supprimés 30 jours après l'inscription par `maintenance()`.
 - Identité juridique, hébergeur, prestataire d'e-mails : `src/lib/site.ts` (bloc `association`,
   `hebergeur`, `emailing`), utilisés par `/mentions-legales`, `/confidentialite`, `/vos-donnees`.
 - Maintenance automatique (`src/lib/maintenance.ts`) via `/api/sante` : suppression des
@@ -96,12 +115,24 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   - Bureau : frise animée (`src/components/bureau/frise-bureau.tsx`) ; pôles listés dans `site.poles`
     (`src/lib/site.ts`), `MembreBureau.pole` = code du pôle (vide = bureau restreint, le premier dans
     l'ordre d'affichage est en tête de frise).
-  - Adhésion gratuite ; formulaire HelloAsso intégrable via `site.liens.helloAssoWidget`.
+  - **Adhésion = création de compte (5 octobre 2026, choix de Guillaume)** : l'adhésion est gratuite et ne passe
+    plus par HelloAsso. Page `/adhesion` (`/inscription` y redirige, `next.config.ts`) : choix du profil, formulaire
+    et carte d'adhésion qui se remplit pendant la saisie (`src/components/adhesion/carte-adhesion.tsx`).
+  - **Profils de compte** (`User.profil`, `src/lib/profils.ts`) : `ALUMNI` (étudiant ou ancien, promotion, fiche) ou
+    `PERSONNEL` (enseignant, responsable de la formation, direction, administration : `User.fonction` = code de
+    `FONCTIONS_PERSONNEL`). Un compte PERSONNEL n'a JAMAIS de fiche : `validerCompte` ne crée ni ne rattache de fiche,
+    « Ma fiche » est masquée et `/espace/ma-fiche` / `creerMaFiche` le renvoient à l'accueil ; il n'apparaît donc ni
+    dans l'annuaire ni sur le site public. Validé par le bureau comme les autres, puis même accès qu'un membre
+    (annuaire, stages, offres, proposer une offre). Tester avec `estPersonnel(user)`, jamais `profil === …` en dur.
+  - **Boutique** (`/boutique`) : boutique de goodies hébergée par HelloAsso, adresses des deux widgets dans
+    `site.liens.boutique` (à changer à chaque nouvelle boutique annuelle) + page générale `site.liens.helloAsso`. Le
+    redimensionnement du widget (`src/components/boutique/widget-helloasso.tsx`) n'accepte que les messages de
+    `https://www.helloasso.com` venant de son propre cadre.
 - Patchs des comptes membres (PATCHS.md, partie 2, appliqués le 3 octobre 2026) :
   - Menu de l'espace (`src/components/nav-deroulante.tsx`, données `navigationMembres` dans `site.ts`) :
     menus déroulants « Réseau » (Annuaire, Que sont-ils devenus ?), « Opportunités » (Archive des stages,
-    Offres, Erasmus) et « Mon profil » (Ma fiche, Mon compte), Événements en onglet seul (réorganisé le
-    4 octobre 2026) ; plein écran sous 1024 px (rendu dans `<body>` via un portail, car `template.tsx`
+    Offres, Erasmus) et « Mon profil » (Ma fiche, Mon compte) (réorganisé le 4 octobre 2026 ; l'onglet
+    Événements a disparu le 5 octobre, les événements étant publics sur `/actualites`) ; plein écran sous 1024 px (rendu dans `<body>` via un portail, car `template.tsx`
     anime les pages). `restreint: true` = rubrique fermée aux comptes en attente (cadenas + fenêtre
     `DialogueRestreint`). Le même composant sert à l'administration (`navigationAdmin` : « Membres » =
     Comptes, Pré-comptes, Fiches ; « Listes » = Domaines, Établissements) : props `racine`, `libelle`,
@@ -130,10 +161,29 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   - Mon compte (MEM-06) : changement d'adresse e-mail (mot de passe vérifié par `auth.api.verifyPassword`,
     lien envoyé à la nouvelle adresse, `user.changeEmail` dans `auth.ts`) ; `afterEmailVerification`
     ne prévient le bureau que pour une inscription (`estChangementEmail`).
-  - Événements (MEM-08, choix de Guillaume : maquette B + affiches « Passés » de la maquette A, voir
-    `../maquettes/evenements-propositions.html`) : prochain rendez-vous en grand avec compte à rebours
-    (`src/components/evenements/compte-a-rebours.tsx`, calculé dans le navigateur), frise des suivants
-    par mois, événements passés en affiches qui défilent ; un clic ouvre la fiche détaillée en fenêtre.
+  - Événements : voir « Publications » ci-dessous (fusion avec les actualités le 5 octobre 2026).
+- **Publications = actualités ET événements (fusion du 5 octobre 2026, choix de Guillaume)** : une seule
+  table `Article` avec `type` (`ACTUALITE` | `EVENEMENT`) et, pour un événement, `debut` (obligatoire),
+  `fin`, `lieu`, `lien` ; `contenu` facultatif pour un événement (compte rendu ajouté après coup). La table
+  `Evenement` n'existe plus. Un seul formulaire (`src/app/admin/actualites/[id]/formulaire.tsx`, sélecteur
+  Actualité / Événement ; catégorie masquée pour un événement) et une seule liste admin « Publications »
+  (`/admin/actualites`, filtre `?type=`) ; `/admin/evenements` redirige. Les événements sont PUBLICS :
+  page unique `/actualites` = agenda des événements à venir en tête (`src/components/evenements/agenda.tsx` :
+  prochain rendez-vous + compte à rebours, frise par mois, mise en page MEM-08) puis fil des actualités
+  et des événements passés (affiche jour/mois si pas de photo), filtres Tout / Actualités / Événements
+  et archive par année ; tri par date de référence (`debut` pour un événement, sinon `publieLe`), en JS.
+  Page détail : encart date/lieu + Google Agenda + `.ics` public (`/actualites/[slug]/ics`). Outils
+  d'agenda : `src/lib/calendrier.ts` (`estEvenement`, type `Evenement` = article daté).
+  `/espace/evenements` redirige vers `/actualites?type=evenements` ; l'accueil de l'espace garde le
+  panneau « Prochains événements ».
+- **Réseaux sociaux sur l'accueil (5 octobre 2026, choix de Guillaume)** : adresses de l'association dans
+  `site.liens.instagram` / `site.liens.linkedin` (`src/lib/site.ts`). Icônes de marque en SVG inline
+  (`src/components/icones-sociales.tsx` : `LiensReseaux`, `reseauxDeLAssociation`), affichées dans le bandeau, la
+  section « Suivez-nous » et l'appel final de l'accueil, le pied de page et la page Contact. Section
+  `src/components/section-reseaux.tsx` : boutons de profil + les 3 derniers posts publiés (`PostSocial`, saisis dans
+  `/admin/reseaux` : réseau, adresse du post vérifiée sur le domaine du réseau, légende, visuel téléversé, publié).
+  Aucun embed ni appel à Instagram/LinkedIn : pas de cookie tiers (les mentions légales disent qu'il n'y en a pas) ;
+  ne jamais copier une image depuis un réseau (liens qui expirent) : sans visuel, cadre « Visuel à ajouter ».
 - Patchs de l'administration (PATCHS.md, partie 3, appliqués le 4 octobre 2026) :
   - Rôles (ADM-01) : voir « Authentification » ci-dessus. Page `/admin/comptes` : boutons selon
     `peutChangerRole` ; « Lien de mot de passe » envoie un lien de réinitialisation (le bureau ne voit
@@ -221,8 +271,8 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   de profil, pas juste dans la doc.
 - Comptes membres : validation manuelle par le bureau avant activation (pas d'auto-inscription
   ouverte).
-- Cotisations/dons : gérés via HelloAsso (lien externe), pas de paiement à développer sur le
-  site.
+- Adhésion gratuite = création de compte sur le site. Boutique (et dons éventuels) : HelloAsso (widgets
+  intégrés sur `/boutique`), pas de paiement à développer sur le site.
 - Budget association : zéro au départ — toute dépendance payante (au-delà de Coolify/VPS déjà
   pris en charge) doit être justifiée et validée avant d'être ajoutée au projet.
 

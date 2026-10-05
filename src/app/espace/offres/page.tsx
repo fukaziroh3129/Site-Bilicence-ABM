@@ -5,6 +5,7 @@ import { OffresInteractives, type OffreCarte } from "@/components/offres/offres-
 import { BandeauEspace, Panneau, Pastille, buttonClasses } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { LIBELLES_TYPE_OFFRE, dateCourte, libellePromo } from "@/lib/format";
+import { estPersonnel, libelleFonction } from "@/lib/profils";
 import { exigerMembreActif } from "@/lib/session";
 
 export const metadata = { title: "Offres" };
@@ -12,11 +13,15 @@ export const metadata = { title: "Offres" };
 const LIBELLES_STATUT = { EN_ATTENTE: "En relecture", PUBLIEE: "Publiée", REFUSEE: "Non retenue" } as const;
 const JOUR = 24 * 60 * 60 * 1000;
 
-/** « Claire F. (2021-2024) » : prénom et initiale, comme dans un réseau d'anciens. */
-function auteur(u: { prenom: string; nom: string; promoEntree: number | null } | null) {
+/**
+ * « Claire F. (2021-2024) » : prénom et initiale, comme dans un réseau d'anciens. Pour le personnel de
+ * l'université, la fonction remplace la promotion : « Marc D. (Responsable de la formation) ».
+ */
+function auteur(u: { prenom: string; nom: string; promoEntree: number | null; profil: string; fonction: string | null } | null) {
   if (!u || !u.prenom) return null;
   const nom = u.nom ? ` ${u.nom.trim()[0].toUpperCase()}.` : "";
-  return `${u.prenom}${nom}${u.promoEntree ? ` (${libellePromo(u.promoEntree)})` : ""}`;
+  const precision = estPersonnel(u) ? libelleFonction(u.fonction) : u.promoEntree ? libellePromo(u.promoEntree) : null;
+  return `${u.prenom}${nom}${precision ? ` (${precision})` : ""}`;
 }
 
 export default async function Offres({ searchParams }: PageProps<"/espace/offres">) {
@@ -29,7 +34,7 @@ export default async function Offres({ searchParams }: PageProps<"/espace/offres
   const [offres, mesOffres] = await Promise.all([
     prisma.offre.findMany({
       where: { statut: "PUBLIEE", OR: [{ dateLimite: null }, { dateLimite: { gte: debutJournee } }] },
-      include: { deposePar: { select: { prenom: true, nom: true, promoEntree: true } } },
+      include: { deposePar: { select: { prenom: true, nom: true, promoEntree: true, profil: true, fonction: true } } },
       orderBy: { publieeLe: "desc" },
     }),
     prisma.offre.findMany({ where: { deposeParId: user.id }, orderBy: { creeLe: "desc" }, take: 10 }),

@@ -1,13 +1,14 @@
-import { Download, IdCard, KeyRound, Mail, Trash2 } from "lucide-react";
+import { Download, IdCard, KeyRound, Mail, ShieldCheck, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { EncartCompletude } from "@/components/fiche/encart-completude";
 import { BandeauEspace, Initiales, Panneau, buttonClasses, classeLien } from "@/components/ui";
 import { completude } from "@/lib/completude";
 import { prisma } from "@/lib/db";
 import { libellePromo, moisAnnee } from "@/lib/format";
+import { estPersonnel, libelleFonction } from "@/lib/profils";
 import { LIBELLES_ROLE, type Role } from "@/lib/roles";
 import { exigerCompte } from "@/lib/session";
-import { FormulaireEmail, FormulaireMotDePasse, FormulaireSuppression } from "./formulaires";
+import { FormulaireDoubleAuth, FormulaireEmail, FormulaireMotDePasse, FormulaireSuppression } from "./formulaires";
 
 export const metadata = { title: "Mon compte" };
 
@@ -15,6 +16,7 @@ const SOMMAIRE = [
   { id: "ma-fiche", libelle: "Ma fiche", icone: IdCard },
   { id: "adresse", libelle: "Adresse e-mail", icone: Mail },
   { id: "mot-de-passe", libelle: "Mot de passe", icone: KeyRound },
+  { id: "double-auth", libelle: "Double authentification", icone: ShieldCheck },
   { id: "donnees", libelle: "Mes données", icone: Download },
   { id: "suppression", libelle: "Supprimer le compte", icone: Trash2 },
 ];
@@ -22,7 +24,10 @@ const SOMMAIRE = [
 export default async function MonCompte({ searchParams }: PageProps<"/espace/compte">) {
   // Accessible aussi aux comptes en attente de validation (mot de passe, adresse, suppression).
   const { user } = await exigerCompte();
-  const { email, error } = await searchParams;
+  const { email, error, "double-auth": doubleAuth } = await searchParams;
+  // Le personnel de l'université n'a pas de fiche : pas de rubrique « Ma fiche ».
+  const personnel = estPersonnel(user);
+  const sommaire = personnel ? SOMMAIRE.filter((s) => s.id !== "ma-fiche") : SOMMAIRE;
 
   const fiche = user.personneId
     ? await prisma.personne.findUnique({ where: { id: user.personneId }, include: { _count: { select: { formations: true, experiences: true } } } })
@@ -44,7 +49,7 @@ export default async function MonCompte({ searchParams }: PageProps<"/espace/com
             </span>
             <p>
               {user.createdAt && `Compte créé en ${moisAnnee(new Date(user.createdAt))}`}
-              {user.promoEntree && ` · promotion ${libellePromo(user.promoEntree)}`}
+              {personnel ? ` · ${libelleFonction(user.fonction)}` : user.promoEntree && ` · promotion ${libellePromo(user.promoEntree)}`}
             </p>
           </div>
         }
@@ -53,6 +58,13 @@ export default async function MonCompte({ searchParams }: PageProps<"/espace/com
       {email === "modifie" && !error && (
         <p role="status" className="rounded-abm-md border border-bordeaux-700/20 bg-white px-4 py-3 text-sm font-semibold text-bordeaux-700 shadow-abm-card">
           Votre nouvelle adresse e-mail est confirmée : utilisez-la désormais pour vous connecter.
+        </p>
+      )}
+      {(doubleAuth === "active" || doubleAuth === "desactivee") && (
+        <p role="status" className="rounded-abm-md border border-bordeaux-700/20 bg-white px-4 py-3 text-sm font-semibold text-bordeaux-700 shadow-abm-card">
+          {doubleAuth === "active"
+            ? "Double authentification activée : un code vous sera demandé à chaque connexion."
+            : "Double authentification désactivée."}
         </p>
       )}
       {error && (
@@ -65,7 +77,7 @@ export default async function MonCompte({ searchParams }: PageProps<"/espace/com
         <nav aria-label="Sur cette page" className="hidden lg:sticky lg:top-28 lg:block lg:self-start">
           <p className="eyebrow text-bordeaux-500">Sur cette page</p>
           <ol className="mt-4 space-y-1 border-l border-bordeaux-700/15 text-sm">
-            {SOMMAIRE.map(({ id, libelle, icone: Icone }) => (
+            {sommaire.map(({ id, libelle, icone: Icone }) => (
               <li key={id}>
                 <a
                   href={`#${id}`}
@@ -79,7 +91,7 @@ export default async function MonCompte({ searchParams }: PageProps<"/espace/com
         </nav>
 
         <div className="space-y-6">
-          <EncartCompletude avancement={avancement} id="ma-fiche" className="scroll-mt-28" />
+          {!personnel && <EncartCompletude avancement={avancement} id="ma-fiche" className="scroll-mt-28" />}
 
           <Panneau id="adresse" className="scroll-mt-28" titre="Adresse e-mail" icone={<Mail size={19} aria-hidden />}>
             <p className="mb-5 max-w-[62ch] text-[15px] text-ink-soft">
@@ -90,6 +102,23 @@ export default async function MonCompte({ searchParams }: PageProps<"/espace/com
 
           <Panneau id="mot-de-passe" className="scroll-mt-28" titre="Mot de passe" icone={<KeyRound size={19} aria-hidden />}>
             <FormulaireMotDePasse />
+          </Panneau>
+
+          <Panneau id="double-auth" className="scroll-mt-28" titre="Double authentification" icone={<ShieldCheck size={19} aria-hidden />}>
+            <p className="mb-5 max-w-[62ch] text-[15px] text-ink-soft">
+              {user.twoFactorEnabled ? (
+                <>
+                  <b className="text-ink">Activée.</b> À chaque connexion, un code à 6 chiffres de votre application d’authentification
+                  vous est demandé en plus du mot de passe.
+                </>
+              ) : (
+                <>
+                  Facultative. En plus du mot de passe, un code à 6 chiffres affiché par une application sur votre téléphone sera
+                  demandé à chaque connexion : votre compte reste protégé même si votre mot de passe est découvert.
+                </>
+              )}
+            </p>
+            <FormulaireDoubleAuth active={!!user.twoFactorEnabled} />
           </Panneau>
 
           <Panneau id="donnees" className="scroll-mt-28" titre="Mes données" icone={<Download size={19} aria-hidden />}>

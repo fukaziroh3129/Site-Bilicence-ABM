@@ -13,6 +13,8 @@ import {
   SceauHero,
   TitreAnime,
 } from "@/components/anime";
+import { LiensReseaux, reseauxDeLAssociation } from "@/components/icones-sociales";
+import { SectionReseaux } from "@/components/section-reseaux";
 import { buttonClasses } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { normaliser } from "@/lib/format";
@@ -56,7 +58,10 @@ async function chiffres() {
 
 export default async function Accueil() {
   await connection();
-  const c = await chiffres();
+  const [c, postsSociaux] = await Promise.all([
+    chiffres(),
+    prisma.postSocial.findMany({ where: { publie: true }, orderBy: { publieLe: "desc" }, take: 3 }),
+  ]);
 
   const tuilesChiffres = [
     { valeur: c.personnes, libelle: "étudiants et diplômés" },
@@ -64,6 +69,8 @@ export default async function Accueil() {
     { valeur: c.etablissements, libelle: "établissements de master" },
     { valeur: c.stages, libelle: "stages partagés" },
   ].filter((t) => t.valeur > 0);
+  // Autant de colonnes que de chiffres affichés : pas de case vide quand un chiffre vaut 0.
+  const colonnesChiffres = ["", "lg:grid-cols-1", "lg:grid-cols-2", "lg:grid-cols-3", "lg:grid-cols-4"][tuilesChiffres.length];
 
   // Données structurées (schema.org) : aident les moteurs de recherche à présenter l'association.
   const donneesStructurees = {
@@ -74,7 +81,7 @@ export default async function Accueil() {
     url: URL_SITE,
     logo: `${URL_SITE}/brand/logo-abm-seal.png`,
     description: site.description,
-    ...(site.liens.instagram ? { sameAs: [site.liens.instagram] } : {}),
+    ...(reseauxDeLAssociation().length > 0 ? { sameAs: reseauxDeLAssociation().map((r) => r.lien) } : {}),
   };
 
   return (
@@ -109,6 +116,12 @@ export default async function Accueil() {
                     Découvrir la formation
                   </Link>
                 </div>
+                {reseauxDeLAssociation().length > 0 && (
+                  <div className="mt-6 flex items-center gap-3">
+                    <span className="eyebrow text-white/76">Suivez-nous</span>
+                    <LiensReseaux variante="clair" />
+                  </div>
+                )}
               </div>
             </div>
             <div className="order-1 mx-auto w-52 sm:w-72 lg:order-2 lg:w-full">
@@ -121,12 +134,13 @@ export default async function Accueil() {
       {/* ─── Le réseau en chiffres (données réelles de la base) ─── */}
       {tuilesChiffres.length > 0 && (
         <section className="fond-papier">
-          <Groupe as="div" className="mx-auto grid max-w-6xl grid-cols-2 gap-y-10 px-4 py-16 sm:px-8 lg:grid-cols-4">
+          <Groupe as="div" className={`mx-auto grid max-w-6xl grid-cols-2 gap-y-10 px-4 py-16 sm:px-8 ${colonnesChiffres}`}>
             {tuilesChiffres.map((t, i) => (
               <ElementGroupe
                 as="div"
                 key={t.libelle}
-                className={`px-4 text-center ${i > 0 ? "lg:border-l lg:border-bordeaux-700/15" : ""} ${i % 2 === 1 ? "max-lg:border-l max-lg:border-bordeaux-700/15" : ""}`}
+                // Sur deux colonnes, un dernier chiffre seul occupe toute la ligne (centré).
+                className={`px-4 text-center ${i > 0 ? "lg:border-l lg:border-bordeaux-700/15" : ""} ${i % 2 === 1 ? "max-lg:border-l max-lg:border-bordeaux-700/15" : ""} ${i === tuilesChiffres.length - 1 && i % 2 === 0 ? "max-lg:col-span-2" : ""}`}
               >
                 <Compteur valeur={t.valeur} className="block font-impact text-5xl text-bordeaux-700 sm:text-6xl" />
                 <span className="mt-2 block text-sm text-ink-soft">{t.libelle}</span>
@@ -212,7 +226,7 @@ export default async function Accueil() {
 
           <ElementGroupe>
             <CarteProjecteur className="carte-premium h-full rounded-abm-lg border border-bordeaux-700/20 bg-white">
-              <Link href="/espace/evenements" className="group flex h-full flex-col gap-4 p-7">
+              <Link href="/actualites?type=evenements" className="group flex h-full flex-col gap-4 p-7">
                 <CalendarDays size={26} strokeWidth={1.5} aria-hidden className="text-bordeaux-700" />
                 <h3 className="font-display text-xl font-bold text-bordeaux-700">Événements</h3>
                 <p className="text-sm text-ink-soft">Les rendez-vous de l’année, à ajouter à son agenda.</p>
@@ -285,18 +299,25 @@ export default async function Accueil() {
         ))}
       </section>
 
+      {/* ─── Réseaux sociaux : profils de l'association et derniers posts choisis par le bureau ─── */}
+      <SectionReseaux posts={postsSociaux} />
+
       {/* ─── Appel final : rejoindre l'espace membres ─── */}
       <section className="fond-bordeaux filigrane relative overflow-hidden">
         <SceauFiligrane className="-right-40 -top-40 size-[520px]" />
         <Apparition className="relative mx-auto max-w-4xl px-4 py-20 text-center sm:px-8 sm:py-24">
           <h2 className="font-display text-4xl font-bold leading-[1.1] sm:text-5xl">Ancien ou étudiant de la bi-licence&nbsp;?</h2>
           <p className="mx-auto mt-5 max-w-[48ch] text-lg text-white/80">
-            Créez votre compte : le bureau le valide, et vous rejoignez l’annuaire du réseau.
+            Adhérez en créant votre compte&nbsp;: c’est gratuit, le bureau le valide, et vous rejoignez l’annuaire du réseau.
           </p>
-          <Link href="/inscription" className={`${buttonClasses("inverse")} mt-10`}>
-            Créer mon compte
+          <p className="mx-auto mt-3 max-w-[52ch] text-sm text-white/70">
+            Enseignant, responsable de la formation ou personnel de l’université&nbsp;? L’adhésion vous est aussi ouverte.
+          </p>
+          <Link href="/adhesion" className={`${buttonClasses("inverse")} mt-10`}>
+            Adhérer
             <ArrowRight size={16} className="fleche" aria-hidden />
           </Link>
+          <LiensReseaux variante="clair" className="mt-8 justify-center" />
         </Apparition>
       </section>
     </>

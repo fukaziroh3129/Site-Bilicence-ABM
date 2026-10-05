@@ -73,7 +73,6 @@ async function main() {
   await prisma.user.deleteMany();
   await prisma.personne.deleteMany();
   await prisma.etablissement.deleteMany();
-  await prisma.evenement.deleteMany();
   await prisma.article.deleteMany();
   await prisma.membreBureau.deleteMany();
 
@@ -202,11 +201,13 @@ async function main() {
     ],
   });
 
-  await prisma.evenement.createMany({
+  // Événements : des publications de type EVENEMENT (même table que les actualités).
+  const evenement = { type: "EVENEMENT" as const, categorie: "ASSOCIATION" as const, publie: true, publieLe: new Date() };
+  await prisma.article.createMany({
     data: [
-      { titre: "Afterwork des anciens", debut: dansJours(10, 19), lieu: "Montpellier", description: "Rencontre entre étudiants et anciens autour d’un verre." },
-      { titre: "Assemblée générale", debut: dansJours(40, 18), fin: dansJours(40, 20), lieu: "Faculté d’économie, Montpellier", description: "Bilan de l’année et élection du bureau." },
-      { titre: "Soirée de rentrée", debut: dansJours(-20, 20), lieu: "Montpellier" },
+      { ...evenement, titre: "Afterwork des anciens", slug: "afterwork-des-anciens", debut: dansJours(10, 19), lieu: "Montpellier", chapo: "Rencontre entre étudiants et anciens autour d’un verre." },
+      { ...evenement, titre: "Assemblée générale", slug: "assemblee-generale", debut: dansJours(40, 18), fin: dansJours(40, 20), lieu: "Faculté d’économie, Montpellier", chapo: "Bilan de l’année et élection du bureau." },
+      { ...evenement, titre: "Soirée de rentrée", slug: "soiree-de-rentree", debut: dansJours(-20, 20), lieu: "Montpellier", contenu: "Événement fictif de démonstration : après la soirée, le bureau complète ici le compte rendu." },
     ],
   });
 

@@ -32,6 +32,7 @@ Dans l'application Coolify → **Environment Variables** :
 | `SMTP_USER` / `SMTP_PASSWORD` | Identifiants SMTP Brevo (compte Brevo → SMTP & API) |
 | `EMAIL_EXPEDITEUR` | `ABM <contact@bilicence.fr>` (adresse validée dans Brevo) |
 | `UPLOAD_DIR` | `/app/uploads` |
+| `LIEN_DRIVE` | Adresse du Drive des cours (menu des membres validés ; jamais dans le code, le dépôt est public) |
 
 Sans SMTP configuré, personne ne peut s'inscrire (la confirmation de l'adresse e-mail est obligatoire).
 Pour Brevo : déclarer le domaine `bilicence.fr` et ajouter chez Hostinger les enregistrements DNS
@@ -88,8 +89,11 @@ ajustée par la date d'entrée dans l'association), universités Erasmus déduit
 l'Excel de poursuite à relire.
 
 En production, la base est vide au départ. Deux façons de la remplir :
-- ouvrir temporairement un port public sur la base Coolify, lancer depuis le PC la commande
-  `--confirmer` (sans `--vider`) avec `DATABASE_URL` pointant vers ce port, puis refermer le port ;
+- **tunnel SSH** depuis le PC (jamais de port public sur la base, même « temporairement » : elle
+  contient toutes les données personnelles). Dans Coolify, noter l'adresse IP interne du conteneur
+  PostgreSQL, puis depuis le PC : `ssh -L 5434:<ip-interne>:5432 utilisateur@<ip-du-vps>` ; dans un
+  autre terminal, lancer la commande `--confirmer` (sans `--vider`) avec `DATABASE_URL` pointant vers
+  `localhost:5434`, puis fermer le tunnel ;
 - ou ne rien importer et laisser le bureau créer les pré-comptes depuis **Administration → Pré-comptes**.
 
 Compte propriétaire (président) : `npm run admin:creer -- adresse@exemple.fr "Prénom" "Nom" [promo]`
@@ -118,7 +122,35 @@ Puis vérifier une sauvegarde et sa restauration.
 
 ## Sécurité en place
 
-En-têtes HTTP de sécurité (`next.config.ts`), limitation des tentatives (connexion, inscription,
-mot de passe oublié, contact, offres), validation de toutes les saisies côté serveur, vérification
-de la signature des images téléversées, contrôle d'accès dans chaque action. Après chaque mise à
-jour des dépendances : `npm audit --omit=dev`.
+Audit complet du 5 octobre 2026. Dans le code :
+- **API d'authentification fermée** : `src/app/api/auth/[...all]/route.ts` ne laisse passer que les liens
+  reçus par e-mail (confirmation d'adresse, réinitialisation). Tout le reste passe par les formulaires du
+  site (server actions), qui vérifient mot de passe, limites et consentement. Ne pas rouvrir cette route.
+- **Limitation des tentatives** (`src/lib/limite.ts`) par adresse IP ET par adresse e-mail visée
+  (connexion, inscription, mot de passe oublié, double authentification, contact, invitation). L'IP est la
+  DERNIÈRE de `X-Forwarded-For` (celle ajoutée par le proxy de Coolify). **Après la mise en ligne**, vérifier
+  dans les journaux qu'un essai de connexion raté est bien compté avec votre IP publique ; si un autre proxy
+  (Cloudflare…) est ajouté devant Coolify, adapter `adresseIp()`.
+- **Double authentification** facultative (Mon compte), alertes par e-mail lors d'un changement de mot de
+  passe, d'adresse ou de double authentification.
+- **En-têtes HTTP** (`next.config.ts`) dont une politique de contenu (CSP) qui n'autorise que le site
+  lui-même et le cadre HelloAsso. Nouveau service externe (vidéo, carte…) = l'ajouter à la CSP.
+- Validation de toutes les saisies côté serveur, signature des images vérifiée, PDF jamais publics.
+- **Journal** des actions sensibles du bureau (rôles, suppressions, export CSV, liens de connexion) :
+  lignes `[journal]` dans Coolify → Logs.
+- Après chaque mise à jour des dépendances : `npm audit --omit=dev` (reste connu : `deepmerge-ts`, outil
+  Prisma en ligne de commande, non exposé ; ne PAS lancer `npm audit fix --force`, qui rétrograde Prisma).
+
+À faire hors du code, avant d'ouvrir le site :
+- **GitHub** : double authentification sur le compte ; Settings → Code security → Dependabot alerts,
+  Secret scanning et Push protection ; règle de protection de la branche `main` (chaque push déploie).
+  Le dépôt est **public** : envisager de le passer en privé (Coolify sait déployer un dépôt privé).
+- **Coolify, Hostinger, Brevo** : mots de passe uniques et double authentification.
+- **VPS** : connexion SSH par clé uniquement (mot de passe désactivé), pare-feu limité aux ports 22, 80
+  et 443, mises à jour de sécurité automatiques.
+- **Base** : jamais de port public (voir §7, tunnel SSH).
+- **Sauvegardes** : quotidiennes, envoyées hors du VPS et **chiffrées** (elles contiennent toutes les
+  données personnelles) ; tester une restauration.
+- **E-mails** : SPF, DKIM **et DMARC** sur `bilicence.fr` (enregistrements donnés par Brevo).
+- **Secrets** : dans un gestionnaire de mots de passe, jamais dans des fichiers texte ; mot de passe du
+  propriétaire en production différent de celui du PC.

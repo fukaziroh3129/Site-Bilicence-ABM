@@ -11,13 +11,22 @@ export const site = {
   // Liens externes : laisser à null tant que l'adresse n'est pas connue.
   // Le site affiche alors un emplacement « à compléter » au lieu d'un lien cassé.
   liens: {
-    // Page HelloAsso de l'association (bouton « Adhérer sur HelloAsso »).
-    helloAsso: null as string | null,
-    // Formulaire HelloAsso intégré dans la page Adhésion (facultatif) : dans HelloAsso, ouvrir le
-    // formulaire d'adhésion → « Diffuser » → « Intégrer à mon site » et copier l'adresse du widget,
-    // de la forme https://www.helloasso.com/associations/<asso>/adhesions/<formulaire>/widget
-    helloAssoWidget: null as string | null,
-    instagram: null as string | null,
+    // Page HelloAsso de l'association (bouton « Toutes les boutiques sur HelloAsso » de la page Boutique).
+    // L'adhésion, gratuite, ne passe pas par HelloAsso : c'est la création de compte sur /adhesion.
+    helloAsso: "https://www.helloasso.com/associations/alumni-bilicence-montpellier-abm" as string | null,
+    // Boutique de l'année intégrée dans la page Boutique. À CHANGER à chaque nouvelle boutique (une par année
+    // universitaire) : dans HelloAsso, ouvrir la boutique → « Diffuser » → « Intégrer à mon site », et recopier
+    // l'adresse (src) des deux widgets proposés, « widget » (boutique complète) et « widget-vignette » (aperçu).
+    // null = pas de boutique en cours : la page affiche seulement le lien vers HelloAsso.
+    boutique: {
+      widget: "https://www.helloasso.com/associations/alumni-bilicence-montpellier-abm/boutiques/vente-de-goodies-bi-licence-2026-2027/widget",
+      vignette: "https://www.helloasso.com/associations/alumni-bilicence-montpellier-abm/boutiques/vente-de-goodies-bi-licence-2026-2027/widget-vignette",
+    } as { widget: string; vignette: string | null } | null,
+    // Réseaux sociaux de l'association (accueil, pied de page, contact). Adresses sans paramètres de suivi.
+    instagram: "https://www.instagram.com/alumni.bilicence" as string | null,
+    linkedin: "https://fr.linkedin.com/company/bi-licence" as string | null,
+    // Le Drive des cours n'est PAS ici (ce fichier est public) : variable d'environnement LIEN_DRIVE,
+    // ajoutée au menu des seuls membres validés par src/app/espace/layout.tsx.
   },
 
   // Pôles de l'association, dans l'ordre de la page Bureau (frise). Le pictogramme de chaque pôle est
@@ -61,13 +70,18 @@ export const site = {
 };
 
 // Navigation de la partie publique.
-export const navigation = [
-  { href: "/la-formation", label: "La formation" },
+// `court` : libellé affiché dans l'en-tête sur les écrans moyens (1 024 à 1 279 px), où la place manque.
+export const navigation: { href: string; label: string; court?: string }[] = [
+  { href: "/la-formation", label: "La formation", court: "Formation" },
   { href: "/actualites", label: "Actualités" },
-  { href: "/promotions", label: "Les promotions" },
-  { href: "/bureau", label: "Le bureau" },
+  { href: "/promotions", label: "Les promotions", court: "Promotions" },
+  { href: "/bureau", label: "Le bureau", court: "Bureau" },
+  { href: "/boutique", label: "Boutique" },
   { href: "/adhesion", label: "Adhésion" },
 ];
+
+// Dans l'en-tête, l'adhésion passe par le bouton « Espace membres / Adhérer » (src/components/bouton-membres.tsx).
+export const navigationEntete = navigation.filter((item) => item.href !== "/adhesion");
 
 // Navigation de l'espace membres et de l'administration, regroupée en menus déroulants pour rester lisible.
 // `restreint` : rubrique fermée aux comptes en attente de validation (ils ne peuvent que remplir
@@ -81,6 +95,8 @@ export type LienMenu = {
   icone?: string;
   restreint?: boolean;
   admin?: boolean;
+  /** Lien vers un autre site : s'ouvre dans un nouvel onglet. */
+  externe?: boolean;
 };
 export type EntreeMenu = LienMenu | { label: string; liens: LienMenu[] };
 
@@ -101,7 +117,6 @@ export const navigationMembres: EntreeMenu[] = [
       { href: "/erasmus", label: "Erasmus", description: "Les séjours des anciens à l’étranger, par pays et par université.", icone: "erasmus" },
     ],
   },
-  { href: "/espace/evenements", label: "Événements", icone: "evenements", restreint: true },
   {
     label: "Mon profil",
     liens: [
@@ -130,7 +145,7 @@ export const navigationAdmin: EntreeMenu[] = [
     ],
   },
   { href: "/admin/offres", label: "Offres", icone: "offres" },
-  { href: "/admin/evenements", label: "Événements", icone: "evenements" },
-  { href: "/admin/actualites", label: "Actualités", icone: "actualites" },
+  { href: "/admin/actualites", label: "Publications", icone: "actualites" },
+  { href: "/admin/reseaux", label: "Réseaux", icone: "reseaux" },
   { href: "/admin/bureau", label: "Bureau", icone: "bureau" },
 ];

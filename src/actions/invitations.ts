@@ -15,6 +15,7 @@ import { prisma } from "@/lib/db";
 import { PREMIERE_PROMO, normaliser } from "@/lib/format";
 import { champ, valider, type EtatFormulaire } from "@/lib/formulaire";
 import { creerLienInvitation, envoyerInvitation, trouverInvitation } from "@/lib/invitations";
+import { journaliser } from "@/lib/journal";
 import { MESSAGE_LIMITE, adresseIp, autoriser } from "@/lib/limite";
 import { codePays, trouverOuAjouterUniversite, trouverOuCreerEtablissement } from "@/lib/liste-etablissements";
 import { peutGererCompte } from "@/lib/roles";
@@ -244,12 +245,12 @@ export async function confirmerImport(_etat: EtatImport, formData: FormData): Pr
   return { succes: `${crees} pré-compte(s) créé(s). Envoyez maintenant les invitations depuis la liste ci-dessous.` };
 }
 
-/** Vérifie qu'on peut agir sur ce pré-compte et le renvoie. */
+/** Vérifie qu'on peut agir sur ce pré-compte et le renvoie, avec l'administrateur qui agit. */
 async function preCompte(formData: FormData) {
   const { user } = await exigerAdmin();
   const cible = await prisma.user.findUnique({ where: { id: String(formData.get("userId")) }, select: { id: true, role: true, statut: true } });
   if (!cible || cible.statut !== "INVITE" || !peutGererCompte(user, cible)) return null;
-  return cible;
+  return { ...cible, auteur: user };
 }
 
 /** Envoie (ou renvoie) le lien d'invitation par e-mail. */
@@ -272,6 +273,8 @@ export async function envoyerToutesInvitations() {
 export async function genererLienInvitation(_etat: { lien?: string } | null, formData: FormData) {
   const cible = await preCompte(formData);
   if (!cible) return null;
+  // Ce lien donne accès au compte : on garde la trace de qui l'a obtenu.
+  journaliser(cible.auteur, "lien d’invitation généré", `compte ${cible.id}`);
   return { lien: await creerLienInvitation(cible.id) };
 }
 

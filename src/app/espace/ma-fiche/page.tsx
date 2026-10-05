@@ -1,4 +1,5 @@
 import { IdCard } from "lucide-react";
+import { redirect } from "next/navigation";
 import { creerMaFiche } from "@/actions/fiche";
 import { AssistantFiche } from "@/components/fiche/assistant-fiche";
 import { NotesBureau } from "@/components/fiche/notes-bureau";
@@ -7,6 +8,7 @@ import { ETAPES_FICHE, completude, estEtapeFiche } from "@/lib/completude";
 import { prisma } from "@/lib/db";
 import { dictionnaireDomaines } from "@/lib/domaines";
 import { SELECTION_CARTE, versCarteParcours } from "@/lib/parcours";
+import { estPersonnel } from "@/lib/profils";
 import { exigerCompte } from "@/lib/session";
 
 export const metadata = { title: "Ma fiche" };
@@ -14,6 +16,8 @@ export const metadata = { title: "Ma fiche" };
 export default async function MaFiche({ searchParams }: PageProps<"/espace/ma-fiche">) {
   // Ouverte aussi aux comptes en attente : leur fiche reste cachée jusqu'à la validation.
   const { user } = await exigerCompte();
+  // Le personnel de l'université n'a pas de fiche.
+  if (estPersonnel(user)) redirect("/espace");
   const p = await searchParams;
 
   const [personne, pourCarte, domaines] = user.personneId
