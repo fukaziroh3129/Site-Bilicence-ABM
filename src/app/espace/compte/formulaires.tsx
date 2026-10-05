@@ -51,7 +51,7 @@ export function FormulaireSuppression() {
     <form action={action} className="space-y-5">
       <MessageFormulaire etat={etat} />
       <div className="max-w-sm">
-        <Champ nom="motDePasse" libelle="Mot de passe (pour confirmer)" type="password" autoComplete="current-password" requis etat={etat} />
+        <Champ nom="motDePasseSuppression" libelle="Mot de passe (pour confirmer)" type="password" autoComplete="current-password" requis etat={etat} />
       </div>
       <BoutonEnvoyer variante="danger" confirmation="Supprimer définitivement votre compte et votre fiche ?">
         <Trash2 size={16} aria-hidden /> Supprimer définitivement

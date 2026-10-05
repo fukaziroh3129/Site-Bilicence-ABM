@@ -262,9 +262,9 @@ export async function changerEmail(_etat: EtatFormulaire, formData: FormData): P
 export async function supprimerMonCompte(_etat: EtatFormulaire, formData: FormData): Promise<EtatFormulaire> {
   if (!(await limiter("suppression", 10, 900))) return { erreur: MESSAGE_LIMITE };
   await exigerConnexion();
-  const motDePasseSaisi = formData.get("motDePasse");
+  const motDePasseSaisi = formData.get("motDePasseSuppression");
   if (typeof motDePasseSaisi !== "string" || !motDePasseSaisi) {
-    return { erreur: "Saisissez votre mot de passe pour confirmer.", erreurs: { motDePasse: "Champ obligatoire." } };
+    return { erreur: "Saisissez votre mot de passe pour confirmer.", erreurs: { motDePasseSuppression: "Champ obligatoire." } };
   }
 
   try {
