@@ -12,6 +12,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { adresseSite, envoyerEmail } from "@/lib/email";
 import { libellePromo } from "@/lib/format";
+import { modeleEmail } from "@/lib/modele-email";
 import { site } from "@/lib/site";
 
 const DUREE_JOURS = 30;
@@ -68,30 +69,57 @@ export async function envoyerInvitation(userId: string) {
     "votre adresse e-mail",
     user.personne && `votre promotion (${libellePromo(user.personne.promoEntree)})`,
     ...(user.personne?.formations ?? []).map((f) => `votre formation : ${f.intitule}, ${f.etablissement}`),
-  ].filter(Boolean);
+  ].filter((d): d is string => Boolean(d));
+
+  const titre = `Bonjour ${user.prenom}, prenez votre place dans le réseau de la Bi-Licence`;
+  const presentation = `${site.nom}, c’est le réseau de celles et ceux qui sont passés par la ${site.formation}. Les anciens s’y retrouvent et transmettent ; les étudiants y trouvent tout ce qu’il leur faut : annuaire, conseils, archive des stages et des poursuites d’études / masters, offres, retours Erasmus, événements.`;
+  const preparation = "Le bureau vous a préparé un compte à partir de la base de suivi des poursuites d’études de la bi-licence, dans laquelle vous aviez accepté de figurer. Il contient :";
+  const accroche = "En bref : placez votre marque dans la Bi-Licence !";
+  const bouton = { libelle: "Activer mon compte", url: lien };
+  const noteBouton = `Lien valable ${DUREE_JOURS} jours · vous y choisirez votre mot de passe`;
+  const confidentialite = "Votre fiche est visible uniquement des membres connectés ; elle n’apparaît sur les pages publiques que si vous l’acceptez. Une fois connecté, vous pouvez la modifier ou la compléter (« Ma fiche »), ou supprimer votre compte et vos données (« Mon compte »).";
+  const signature = `Le bureau d’${site.nom}`;
 
   await envoyerEmail({
     a: user.email,
     sujet: `Votre compte sur le site d’${site.nom}`,
     ...(site.association.email ? { repondreA: site.association.email } : {}),
     texte: [
-      `Bonjour ${user.prenom},`,
+      titre,
       "",
-      `L’association ${site.nom} ouvre son site, réservé aux étudiants et diplômés de la ${site.formation} : annuaire des anciens, archive des stages, offres, événements.`,
+      presentation,
       "",
-      "Le bureau vous a préparé un compte à partir de la base de suivi des poursuites d’études de la bi-licence, dans laquelle vous aviez accepté de figurer. Il contient :",
+      preparation,
       ...donnees.map((d) => `- ${d}`),
       "",
-      `Pour activer votre compte et choisir votre mot de passe (lien valable ${DUREE_JOURS} jours) :`,
+      accroche,
+      "",
+      `${bouton.libelle} (${noteBouton.replace(" · ", ", ")}) :`,
       lien,
       "",
-      "Votre fiche est visible uniquement des membres connectés ; elle n’apparaît sur les pages publiques que si vous l’acceptez.",
-      "Une fois connecté, vous pouvez modifier ou compléter ces informations (« Ma fiche »), ou supprimer votre compte et vos données (« Mon compte »).",
+      confidentialite,
       `Vous ne souhaitez pas de compte ? Vous pouvez demander la suppression de vos données sans l’activer : ${adresseSite("/contact")}`,
       `En savoir plus sur vos données : ${adresseSite("/confidentialite")}`,
       "",
-      `Le bureau d’${site.nom}`,
+      signature,
     ].join("\n"),
+    html: modeleEmail({
+      titre,
+      apercu: "Votre compte est prêt : activez-le et choisissez votre mot de passe.",
+      contenu: [
+        { paragraphe: presentation },
+        { paragraphe: preparation },
+        { encadre: donnees.map((d) => d.charAt(0).toUpperCase() + d.slice(1)) },
+        { accroche },
+        { bouton, note: noteBouton },
+        { paragraphe: confidentialite, petit: true },
+        { paragraphe: signature, petit: true },
+      ],
+      pied: [
+        ["Vous ne souhaitez pas de compte ? ", { libelle: "Demandez la suppression de vos données", url: adresseSite("/contact") }, " sans l’activer."],
+        [{ libelle: "En savoir plus sur vos données", url: adresseSite("/confidentialite") }],
+      ],
+    }),
   });
   await prisma.user.update({ where: { id: user.id }, data: { invitationEnvoyeeLe: new Date() } });
   return true;

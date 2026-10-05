@@ -8,6 +8,8 @@ type Email = {
   a: string | string[];
   sujet: string;
   texte: string;
+  /** Version mise en page (voir `modeleEmail`) ; le texte brut reste envoyé en alternative. */
+  html?: string;
   /** Envoi en copie cachée (pour les envois groupés, sans dévoiler les adresses). */
   copieCachee?: boolean;
   /** Adresse à laquelle répondre (ex. l'auteur d'un message de contact). */
@@ -37,7 +39,7 @@ export async function envoyerEmail(email: Email) {
   }
 }
 
-async function envoyer({ a, sujet, texte, copieCachee = false, repondreA }: Email) {
+async function envoyer({ a, sujet, texte, html, copieCachee = false, repondreA }: Email) {
   const destinataires = Array.isArray(a) ? a : [a];
   if (destinataires.length === 0) return;
 
@@ -73,10 +75,11 @@ async function envoyer({ a, sujet, texte, copieCachee = false, repondreA }: Emai
         bcc: destinataires.slice(i, i + 50),
         subject: sujet,
         text: texte,
+        html,
       });
     }
   } else {
-    await obtenirTransport().sendMail({ from: expediteur, to: destinataires, subject: sujet, text: texte, replyTo: repondreA });
+    await obtenirTransport().sendMail({ from: expediteur, to: destinataires, subject: sujet, text: texte, html, replyTo: repondreA });
   }
 }
 
