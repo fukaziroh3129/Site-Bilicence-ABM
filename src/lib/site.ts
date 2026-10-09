@@ -33,15 +33,15 @@ export const site = {
   // (onglet « Fonctions et pôles », table Fonction).
 
   // Mandat du bureau affiché sur la page Bureau (ex. "2026-2027"), ou null.
-  mandat: null as string | null,
+  mandat: "2026-2027" as string | null,
 
   // Identité juridique (mentions légales, politique de confidentialité).
   // Laisser à null ce qui n'est pas encore connu : le site affiche alors « à compléter ».
   association: {
     forme: "Association loi 1901",
-    siege: null as string | null, // adresse du siège social (statuts)
-    rna: null as string | null, // numéro RNA (W…), sur le récépissé de déclaration en préfecture
-    email: null as string | null, // adresse de contact, aussi utilisée pour les demandes RGPD
+    siege: "Faculté d’Économie, Espace Richter, avenue Raymond Dugrand, CS 79606, 34960 Montpellier cedex 2" as string | null, // adresse du siège social (statuts)
+    rna: "W343032338" as string | null, // numéro RNA (W…), sur le récépissé de déclaration en préfecture
+    email: "secretaria@bilicence.fr" as string | null, // adresse de contact, aussi utilisée pour les demandes RGPD
     directeurPublication: "Guillaume Dedieu, président de l’association",
   },
 
@@ -51,7 +51,7 @@ export const site = {
     adresse: "61 Lordou Vironos Street, 6023 Larnaca, Chypre",
     site: "https://www.hostinger.fr",
     // Pays du centre de données du VPS (visible dans le panneau Hostinger), ex. "France".
-    localisationServeur: null as string | null,
+    localisationServeur: "France" as string | null,
   },
   emailing: {
     nom: "Brevo (Sendinblue SAS)",
