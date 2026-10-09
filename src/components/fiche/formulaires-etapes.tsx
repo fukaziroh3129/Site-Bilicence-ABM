@@ -94,7 +94,7 @@ export function EtapeAujourdhui({
   maxDomaines,
 }: {
   personne: Personne;
-  optionsDomaines: { valeur: string; libelle: string }[];
+  optionsDomaines: { valeur: string; libelle: string; groupe?: string }[];
   maxDomaines: number;
 }) {
   return (
@@ -134,12 +134,23 @@ export function EtapeAujourdhui({
           </fieldset>
 
           <fieldset className="space-y-5">
-            <legend className="eyebrow text-bordeaux-500">Vos domaines ({maxDomaines} au maximum)</legend>
-            <CasesMultiples nom="secteurs" libelle="Les domaines où vous travaillez ou vous formez" options={optionsDomaines} defaultValue={personne.secteurs} etat={etat} />
+            <legend className="eyebrow text-bordeaux-500">Vos domaines professionnels ({maxDomaines} au maximum)</legend>
+            <p className="text-sm text-ink-soft">
+              Cochez le domaine <b className="font-semibold text-ink">où vous travaillez</b> aujourd’hui ou, si vous êtes encore
+              étudiant, <b className="font-semibold text-ink">celui que vous visez</b>. Les étudiants s’en servent pour trouver
+              quelqu’un qui fait le métier qui les intéresse : plusieurs formations mènent au même domaine, et l’inverse.
+            </p>
+            <CasesMultiples
+              nom="secteurs"
+              libelle="Domaines où vous travaillez, ou que vous visez"
+              options={optionsDomaines}
+              defaultValue={personne.secteurs}
+              etat={etat}
+            />
             <Champ
               nom="nouveauDomaine"
               libelle="Votre domaine n’est pas dans la liste ? Ajoutez-le"
-              aide="Il apparaît tout de suite sur votre fiche, et dans les filtres une fois validé par le bureau."
+              aide="Il est utilisable tout de suite ; le bureau le vérifiera."
               maxLength={60}
               etat={etat}
             />

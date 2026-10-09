@@ -28,7 +28,7 @@ export function FormulaireExperience({
 }: {
   personneId: string;
   experience?: Experience | null;
-  optionsDomaines: { valeur: string; libelle: string }[];
+  optionsDomaines: { valeur: string; libelle: string; groupe?: string }[];
   /** Le bureau modifie la fiche d'un membre : motif obligatoire (ADM-02). */
   demanderMotif?: boolean;
 }) {

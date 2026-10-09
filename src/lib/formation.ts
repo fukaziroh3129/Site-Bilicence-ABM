@@ -134,9 +134,21 @@ export const PARCOURSUP = {
   fiche: "https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation?g_ta_cod=45377&typeBac=0&originePc=0",
 };
 
+// Présentations tirées de la plaquette de la bi-licence 2024-2025 et des fiches de laboratoire (MRE, CEPEL).
+// Même forme pour les deux : statut, spécialités, enseignements, rôle dans la bi-licence (sans pronom).
 export const RESPONSABLES = [
-  { nom: "Thomas Cortade", fonction: "Responsable pédagogique de la bi-licence" },
-  { nom: "Éric Savarese", fonction: "Responsable pédagogique de la bi-licence" },
+  {
+    nom: "Thomas Cortade",
+    fonction: "Responsable pédagogique de la bi-licence",
+    presentation:
+      "Maître de conférences en économie au laboratoire MRE, spécialiste d’économie industrielle et de politique de la concurrence. Enseignements notamment : travaux dirigés de microéconomie et cours d’organisation industrielle. Interlocuteur de la bi-licence pour la Faculté d’Économie.",
+  },
+  {
+    nom: "Éric Savarese",
+    fonction: "Responsable pédagogique de la bi-licence",
+    presentation:
+      "Professeur de science politique au laboratoire CEPEL, spécialiste de la citoyenneté, des mémoires et des migrations. Enseignements notamment : théorie politique et épistémologie des sciences sociales. Interlocuteur de la bi-licence pour la Faculté de Droit et de Science politique.",
+  },
 ];
 
 export const SOURCES = [

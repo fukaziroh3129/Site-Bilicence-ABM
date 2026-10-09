@@ -1,15 +1,16 @@
-// Statistiques anonymes « Que deviennent-ils ? » : top 3 des domaines et des établissements,
+// Statistiques anonymes « Que deviennent-ils ? » : top 3 des grands domaines d'études (familles de
+// mentions de master, depuis le 8 octobre 2026 ; avant : domaines professionnels) et des établissements,
 // calculés à chaque visite à partir de TOUTES les fiches (toujours à jour). On ne renvoie que des
 // proportions et des libellés : jamais de nom ni de donnée permettant de retrouver une personne.
 
 import "server-only";
 import { prisma } from "@/lib/db";
-import { dictionnaireDomaines } from "@/lib/domaines";
 import { FICHE_VISIBLE } from "@/lib/visibilite";
 import { CLE_IEP, LIBELLES_TYPE_ETABLISSEMENT, decrireEtablissement, type TypeEtablissement } from "@/lib/etablissements";
+import { estBiLicence } from "@/lib/mentions";
 
 export type LigneStat = {
-  /** Code du domaine ou clé de l'établissement (sert au filtre du carrousel). */
+  /** Code du grand domaine d'études ou clé de l'établissement (sert au filtre du carrousel). */
   cle: string;
   libelle: string;
   /** Part des personnes concernées, de 0 à 1. */
@@ -20,31 +21,51 @@ export type LigneStat = {
 };
 
 export type StatistiquesDevenir = {
-  domaines: LigneStat[];
+  familles: LigneStat[];
   etablissements: LigneStat[];
 };
 
 const TOP = 3;
 
 export async function statistiquesDevenir(): Promise<StatistiquesDevenir> {
-  const [personnes, dico] = await Promise.all([
-    prisma.personne.findMany({ where: FICHE_VISIBLE, select: { secteurs: true, formations: { select: { etablissement: true, etablissementRef: { select: { nom: true, type: true } } } } } }),
-    dictionnaireDomaines(),
-  ]);
+  const fiches = await prisma.personne.findMany({
+    where: FICHE_VISIBLE,
+    select: {
+      formations: {
+        select: {
+          intitule: true,
+          etablissement: true,
+          etablissementRef: { select: { nom: true, type: true } },
+          mention: { select: { famille: { select: { code: true, libelle: true } } } },
+        },
+      },
+    },
+  });
+  // La bi-licence saisie par erreur comme formation n'est pas une poursuite d'études.
+  const personnes = fiches.map((p) => ({ formations: p.formations.filter((f) => !estBiLicence(f.intitule, f.etablissement)) }));
+  const avecFormation = personnes.filter((p) => p.formations.length > 0);
+  const base = avecFormation.length || 1;
 
-  // ─── Domaines : part des personnes ayant renseigné au moins un domaine ───
-  const valides = new Set(dico.domaines.map((d) => d.code));
-  const avecDomaine = personnes.filter((p) => p.secteurs.some((c) => valides.has(c)));
-  const parDomaine = new Map<string, number>();
-  for (const p of avecDomaine) for (const c of new Set(p.secteurs)) if (valides.has(c)) parDomaine.set(c, (parDomaine.get(c) ?? 0) + 1);
-  const domaines = [...parDomaine]
-    .sort((a, b) => b[1] - a[1] || dico.libelle(a[0]).localeCompare(dico.libelle(b[0]), "fr"))
+  // ─── Grands domaines d'études : part des personnes ayant une poursuite d'études ───
+  const parFamille = new Map<string, { libelle: string; n: number }>();
+  for (const p of avecFormation) {
+    const vues = new Set<string>();
+    for (const f of p.formations) {
+      const famille = f.mention?.famille;
+      if (!famille || vues.has(famille.code)) continue;
+      vues.add(famille.code);
+      const e = parFamille.get(famille.code) ?? { libelle: famille.libelle, n: 0 };
+      e.n++;
+      parFamille.set(famille.code, e);
+    }
+  }
+  const familles = [...parFamille]
+    .sort((a, b) => b[1].n - a[1].n || a[1].libelle.localeCompare(b[1].libelle, "fr"))
     .slice(0, TOP)
-    .map(([code, n]) => ({ cle: code, libelle: dico.libelle(code), part: n / avecDomaine.length }));
+    .map(([code, f]) => ({ cle: code, libelle: f.libelle, part: f.n / base }));
 
   // ─── Établissements : part des personnes ayant au moins une poursuite d'études ───
   // Tous les IEP forment une seule ligne, divisée entre Sciences Po Paris et les autres IEP.
-  const avecFormation = personnes.filter((p) => p.formations.length > 0);
   const parEtab = new Map<string, { nom: string; type: TypeEtablissement; n: number }>();
   let iepParis = 0;
   let iepAutres = 0;
@@ -63,7 +84,6 @@ export async function statistiquesDevenir(): Promise<StatistiquesDevenir> {
       parEtab.set(r.cle, e);
     }
   }
-  const base = avecFormation.length || 1;
   const lignes: (LigneStat & { n: number })[] = [...parEtab].map(([cle, e]) => ({
     cle,
     libelle: e.nom,
@@ -89,5 +109,5 @@ export async function statistiquesDevenir(): Promise<StatistiquesDevenir> {
     .slice(0, TOP)
     .map(({ cle, libelle, type, part, segments }) => ({ cle, libelle, type, part, segments }));
 
-  return { domaines, etablissements };
+  return { familles, etablissements };
 }

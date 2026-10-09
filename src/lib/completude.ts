@@ -1,6 +1,8 @@
 // Taux de remplissage d'une fiche (« Ma fiche est complète à 60 % »), pour encourager les membres.
-// L'Erasmus et l'accord pour la page publique ne comptent pas : tout le monde ne part pas à
-// l'étranger, et l'accord doit rester un choix libre (RGPD).
+// Les étapes Études, Expériences et Erasmus comptent comme remplies quand la personne a indiqué
+// qu'elle n'a rien à y mettre (« Je suis encore en bi-licence », « pas encore de stage », « pas
+// d'Erasmus ») : une fiche peut ainsi être complète. L'accord pour la page publique ne compte pas :
+// il doit rester un choix libre (RGPD).
 
 /** Étapes de « Ma fiche », dans l'ordre du parcours. */
 export const ETAPES_FICHE = [
@@ -29,9 +31,25 @@ type FicheACompter = {
   afficherEmail: boolean;
   afficherLinkedin: boolean;
   afficherTelephone: boolean;
+  sansExperience: boolean;
+  sansErasmus: boolean;
   nbFormations: number;
   nbExperiences: number;
+  nbErasmus: number;
 };
+
+/** Compteurs à demander à Prisma (`include: { _count: { select: COMPTES_FICHE } }`). */
+export const COMPTES_FICHE = { formations: true, experiences: true, erasmus: true } as const;
+
+/** Raccourci pour une fiche lue avec `_count` (voir COMPTES_FICHE). */
+export function completudeDe<T extends Omit<FicheACompter, "nbFormations" | "nbExperiences" | "nbErasmus">>(
+  fiche: T & { _count: { formations: number; experiences: number; erasmus: number } },
+) {
+  return completude({ ...fiche, nbFormations: fiche._count.formations, nbExperiences: fiche._count.experiences, nbErasmus: fiche._count.erasmus });
+}
+
+/** La personne a indiqué qu'elle est encore en bi-licence (aucun master à renseigner pour l'instant). */
+export const estEnBiLicence = (f: { statutActuel: string | null }) => f.statutActuel === "EN_LICENCE";
 
 export function completude(f: FicheACompter) {
   const elements: { libelle: string; etape: EtapeFiche; fait: boolean; minutes: number }[] = [
@@ -40,8 +58,9 @@ export function completude(f: FicheACompter) {
     { libelle: "Votre situation", etape: "aujourdhui", fait: !!f.statutActuel, minutes: 1 },
     { libelle: "Votre poste ou formation actuelle", etape: "aujourdhui", fait: !!(f.situationActuelle || f.structureActuelle), minutes: 1 },
     { libelle: "Vos domaines", etape: "aujourdhui", fait: f.secteurs.length > 0, minutes: 1 },
-    { libelle: "Une formation après la licence", etape: "etudes", fait: f.nbFormations > 0, minutes: 2 },
-    { libelle: "Une expérience (stage, emploi…)", etape: "experiences", fait: f.nbExperiences > 0, minutes: 3 },
+    { libelle: "Une formation après la licence", etape: "etudes", fait: f.nbFormations > 0 || estEnBiLicence(f), minutes: 2 },
+    { libelle: "Une expérience (stage, emploi…)", etape: "experiences", fait: f.nbExperiences > 0 || f.sansExperience, minutes: 3 },
+    { libelle: "Votre Erasmus (ou l’indiquer si vous n’êtes pas parti)", etape: "erasmus", fait: f.nbErasmus > 0 || f.sansErasmus, minutes: 1 },
     { libelle: "Votre présentation", etape: "carte", fait: !!f.presentation, minutes: 1 },
     { libelle: "Votre conseil aux étudiants", etape: "carte", fait: !!f.conseil, minutes: 1 },
   ];

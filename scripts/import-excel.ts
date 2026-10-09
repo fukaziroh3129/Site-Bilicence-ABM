@@ -23,6 +23,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { writeFileSync } from "node:fs";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { lirePoursuite } from "./lecture-poursuite";
+import { detecterMentionsEnLot } from "./mentions-detecter";
 import { relierEtablissements } from "./relier-etablissements";
 
 const [chemin, ...options] = process.argv.slice(2);
@@ -102,6 +103,8 @@ async function main() {
   if (confirmer) {
     const { crees } = await relierEtablissements(prisma);
     console.log(`Établissements : ${crees} ajouté(s) à la liste commune, à contrôler dans Administration → Établissements.`);
+    const { nonReconnus } = await detecterMentionsEnLot(prisma);
+    console.log(`Mentions : ${nonReconnus.size} intitulé(s) à classer dans Administration → Mentions.`);
   }
 
   // BOM UTF-8 pour qu'Excel affiche correctement les accents

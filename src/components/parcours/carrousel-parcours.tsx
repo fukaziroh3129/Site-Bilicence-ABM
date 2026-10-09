@@ -31,8 +31,11 @@ function texteDe(c: CarteParcours, libelle: (code: string) => string) {
   ];
 }
 
-/** Établissement choisi dans les statistiques (ex. « Instituts d'études politiques »). */
-export type FiltreEtablissement = { cle: string; libelle: string };
+/**
+ * Filtre choisi dans les statistiques : un établissement (ex. « Instituts d'études politiques ») ou un
+ * grand domaine d'études (ex. « Économie »). Affiché comme une étiquette qu'on peut retirer.
+ */
+export type FiltreEtablissement = { cle: string; libelle: string; type?: "etablissement" | "famille" };
 
 export function CarrouselParcours({
   cartes,
@@ -62,7 +65,7 @@ export function CarrouselParcours({
       cartes.filter(
         (c) =>
           (!actifs.length || c.domaines.some((d) => actifs.includes(d))) &&
-          (!etablissement || c.etablissements.includes(etablissement.cle)) &&
+          (!etablissement || (etablissement.type === "famille" ? c.familles : c.etablissements).includes(etablissement.cle)) &&
           correspond(texte, texteDe(c, libelle)),
       ),
     [cartes, actifs, etablissement, texte, libelle],
@@ -167,7 +170,7 @@ export function CarrouselParcours({
         setEtablissement(null);
       } else {
         setActifs([]);
-        setEtablissement({ cle, libelle });
+        setEtablissement({ cle, libelle, type: type === "famille" ? "famille" : "etablissement" });
       }
       setCourant(0);
       setRetournee(null);

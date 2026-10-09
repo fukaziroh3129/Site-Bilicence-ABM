@@ -1,9 +1,9 @@
 "use client";
 
-// Outil statistique « Que deviennent-ils ? » : deux podiums (top 3 des domaines, top 3 des
+// Outil statistique « Que deviennent-ils ? » : deux podiums (top 3 des grands domaines d'études, top 3 des
 // établissements), en proportions uniquement, jamais de nom. Réutilisable :
-//  - sur /promotions (mode « filtre ») : un clic sur une ligne filtre le carrousel juste au-dessus ;
-//  - ailleurs, par ex. la page Formation (mode « lien ») : un clic ouvre /promotions déjà filtré.
+//  - sur /promotions (mode « filtre ») : un clic sur une ligne filtre le carrousel juste au-dessus ;
+//  - ailleurs, par ex. la page Formation (mode « lien ») : un clic ouvre /promotions déjà filtré.
 
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
@@ -13,7 +13,7 @@ import type { LigneStat, StatistiquesDevenir } from "@/lib/statistiques";
 
 /** Événement écouté par le carrousel de /promotions. */
 export const EVENEMENT_FILTRE = "abm:filtrer-parcours";
-export type DetailFiltre = { type: "domaine" | "etablissement"; cle: string; libelle: string };
+export type DetailFiltre = { type: "domaine" | "famille" | "etablissement"; cle: string; libelle: string };
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const pourcent = (p: number) => Math.round(p * 100);
@@ -178,10 +178,10 @@ export function StatsDevenir({ stats, mode = "filtre" }: { stats: StatistiquesDe
     <div>
       <div className="grid gap-6 lg:grid-cols-2">
         <Podium
-          titre="Leurs domaines"
-          sousTitre="Part des anciens ayant renseigné un domaine (une personne peut en avoir plusieurs)."
-          lignes={stats.domaines}
-          type="domaine"
+          titre="Ce qu’ils ont étudié"
+          sousTitre="Part des anciens ayant renseigné une poursuite d’études, par grand domaine d’études (une personne peut en avoir plusieurs)."
+          lignes={stats.familles}
+          type="famille"
           mode={mode}
         />
         <Podium

@@ -5,6 +5,7 @@ import { GabaritSousPageFiche } from "@/components/fiche/gabarit-sous-page";
 import { exigerDroitSurFiche, pageDeFiche } from "@/lib/acces";
 import { prisma } from "@/lib/db";
 import { nomsEtablissements } from "@/lib/liste-etablissements";
+import { groupesMentions } from "@/lib/liste-mentions";
 import { motifNecessaire } from "@/lib/notes";
 import { exigerCompte } from "@/lib/session";
 
@@ -34,6 +35,7 @@ export default async function PageFormation({ searchParams }: PageProps<"/espace
         personneId={personneId}
         formation={formation}
         etablissements={await nomsEtablissements()}
+        mentions={await groupesMentions()}
         demanderMotif={await motifNecessaire({ personneId, estProprietaire })}
       />
     </GabaritSousPageFiche>

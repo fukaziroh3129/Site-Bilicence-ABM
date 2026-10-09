@@ -6,6 +6,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { GROUPES_DOMAINES } from "@/lib/domaines";
 import { slugifier } from "@/lib/format";
 import { champ, valider } from "@/lib/formulaire";
 import { exigerBureau } from "@/lib/session";
@@ -17,6 +18,7 @@ function rafraichir() {
 const schemaLibelles = z.object({
   libelle: champ.texte(80),
   court: champ.texte(28),
+  groupe: champ.choixFacultatif(GROUPES_DOMAINES),
 });
 
 /** Ajoute un domaine (déjà contrôlé, puisqu'il vient du bureau). */
@@ -24,12 +26,12 @@ export async function creerDomaine(formData: FormData) {
   await exigerBureau();
   const resultat = valider(schemaLibelles, formData);
   if (!resultat.ok) return;
-  const { libelle, court } = resultat.donnees;
+  const { libelle, court, groupe } = resultat.donnees;
 
   const base = slugifier(libelle) || "domaine";
   let code = base;
   for (let i = 2; await prisma.domaine.findUnique({ where: { code } }); i++) code = `${base}-${i}`;
-  await prisma.domaine.create({ data: { code, libelle, court } });
+  await prisma.domaine.create({ data: { code, libelle, court, groupe } });
   rafraichir();
 }
 
@@ -38,8 +40,8 @@ export async function enregistrerDomaine(formData: FormData) {
   await exigerBureau();
   const resultat = valider(schemaLibelles.extend({ id: z.string().min(1) }), formData);
   if (!resultat.ok) return;
-  const { id, libelle, court } = resultat.donnees;
-  await prisma.domaine.update({ where: { id }, data: { libelle, court, aControler: false } });
+  const { id, libelle, court, groupe } = resultat.donnees;
+  await prisma.domaine.update({ where: { id }, data: { libelle, court, groupe, aControler: false } });
   rafraichir();
 }
 

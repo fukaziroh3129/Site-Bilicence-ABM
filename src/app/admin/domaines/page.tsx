@@ -4,6 +4,7 @@ import { creerDomaine, enregistrerDomaine, fusionnerDomaine, supprimerDomaine } 
 import { BoutonSupprimer } from "@/components/bouton-supprimer";
 import { EnTeteConsole, Panneau, Pastille, Vide, buttonClasses, classeLien, classeLisere, classeSaisie } from "@/components/ui";
 import { prisma } from "@/lib/db";
+import { GROUPES_DOMAINES } from "@/lib/domaines";
 import { dateCourte } from "@/lib/format";
 import { exigerBureau } from "@/lib/session";
 
@@ -33,7 +34,7 @@ export default async function AdminDomaines() {
     const aValider = d.aControler;
     return (
       <div className="space-y-3">
-        <form action={enregistrerDomaine} className="grid gap-3 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
+        <form action={enregistrerDomaine} className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end">
           <input type="hidden" name="id" value={d.id} />
           <label className="text-sm font-semibold text-ink">
             Libellé complet
@@ -42,6 +43,17 @@ export default async function AdminDomaines() {
           <label className="text-sm font-semibold text-ink">
             Libellé court (filtres, cartes)
             <input name="court" defaultValue={d.court} required maxLength={28} className={saisie} />
+          </label>
+          <label className="text-sm font-semibold text-ink">
+            Groupe
+            <select name="groupe" defaultValue={d.groupe ?? ""} className={saisie}>
+              <option value="">Autres domaines</option>
+              {GROUPES_DOMAINES.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
           </label>
           <button type="submit" className={buttonClasses(aValider ? "primary" : "outline", "petit")}>
             {aValider ? "Marquer contrôlé" : "Renommer"}
@@ -138,6 +150,7 @@ export default async function AdminDomaines() {
                   <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 transition-colors hover:bg-bordeaux-100/25 sm:px-6 [&::-webkit-details-marker]:hidden">
                     <span className="font-semibold">{d.libelle}</span>
                     <Pastille>{d.court}</Pastille>
+                    <span className="text-xs text-ink-soft">{d.groupe ?? "Autres domaines"}</span>
                     <span className="text-sm text-ink-soft">
                       {u.fiches.length} fiche{u.fiches.length > 1 ? "s" : ""} · {u.experiences} expérience{u.experiences > 1 ? "s" : ""}
                     </span>
@@ -154,7 +167,7 @@ export default async function AdminDomaines() {
       </Panneau>
 
       <Panneau titre="Ajouter un domaine" icone={<Plus size={18} aria-hidden />}>
-        <form action={creerDomaine} className="grid gap-3 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
+        <form action={creerDomaine} className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end">
           <label className="text-sm font-semibold text-ink">
             Libellé complet
             <input name="libelle" required maxLength={80} placeholder="Ex. Santé / social" className={saisie} />
@@ -162,6 +175,17 @@ export default async function AdminDomaines() {
           <label className="text-sm font-semibold text-ink">
             Libellé court
             <input name="court" required maxLength={28} placeholder="Ex. Santé" className={saisie} />
+          </label>
+          <label className="text-sm font-semibold text-ink">
+            Groupe
+            <select name="groupe" defaultValue={""} className={saisie}>
+              <option value="">Autres domaines</option>
+              {GROUPES_DOMAINES.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
           </label>
           <button type="submit" className={buttonClasses("primary", "petit")}>
             Ajouter

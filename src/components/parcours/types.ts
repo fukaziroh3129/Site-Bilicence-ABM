@@ -37,6 +37,7 @@ export type CarteParcours = {
   etapes: EtapeCarte[];
   domaines: string[]; // codes
   etablissements: string[]; // clés des établissements de poursuite d'études (filtre des statistiques)
+  familles: string[]; // codes des grands domaines d'études de ses formations (filtre des statistiques)
   erasmus: ErasmusCarte[]; // toujours affichés en premier parmi les expériences
   experiences: ExperienceCarte[];
   conseil: string | null;

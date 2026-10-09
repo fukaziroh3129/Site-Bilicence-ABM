@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Apparition } from "@/components/anime";
-import { CarrouselParcours } from "@/components/parcours/carrousel-parcours";
+import { CarrouselParcours, type FiltreEtablissement } from "@/components/parcours/carrousel-parcours";
 import { StatsDevenir } from "@/components/statistiques/stats-devenir";
 import type { CarteParcours, DomaineFiltre } from "@/components/parcours/types";
 import { PageHeader, Vide, classeLien } from "@/components/ui";
@@ -53,10 +53,14 @@ export default async function QueSontIlsDevenus({ searchParams }: PageProps<"/pr
     nombre: cartes.filter((c) => c.domaines.includes(d.code)).length,
   }));
 
-  // Filtres reçus dans l'adresse (lien « Voir ces parcours » depuis une autre page).
+  // Filtres reçus dans l'adresse (lien « Voir ces parcours » depuis une autre page).
   const domaineDemande = typeof p.domaine === "string" && domaines.domaines.some((d) => d.code === p.domaine) ? p.domaine : null;
   const etabDemande = typeof p.etablissement === "string" ? p.etablissement : null;
-  const etablissementInitial = etabDemande
+  const familleDemandee =
+    typeof p.famille === "string" ? await prisma.familleMention.findUnique({ where: { code: p.famille }, select: { code: true, libelle: true } }) : null;
+  const etablissementInitial: FiltreEtablissement | null = familleDemandee
+    ? { cle: familleDemandee.code, libelle: familleDemandee.libelle, type: "famille" }
+    : etabDemande
     ? etabDemande === CLE_IEP
       ? { cle: CLE_IEP, libelle: "Instituts d’études politiques" }
       : (stats.etablissements.find((e) => e.cle === etabDemande) ??
@@ -85,7 +89,7 @@ export default async function QueSontIlsDevenus({ searchParams }: PageProps<"/pr
             cartes={cartes}
             domaines={filtres}
             domaineInitial={domaineDemande}
-            etablissementInitial={etablissementInitial && { cle: etablissementInitial.cle, libelle: etablissementInitial.libelle }}
+            etablissementInitial={etablissementInitial}
           />
         )}
       </div>
@@ -98,8 +102,8 @@ export default async function QueSontIlsDevenus({ searchParams }: PageProps<"/pr
             Que deviennent-ils&nbsp;?
           </h2>
           <p className="mt-3 max-w-[60ch] text-ink-soft">
-            Les domaines où travaillent et se forment les anciens, et les établissements qui les accueillent le plus après la
-            bi-licence.
+            Ce que les anciens ont étudié après la bi-licence, par grand domaine d’études, et les établissements qui les
+            accueillent le plus.
           </p>
         </Apparition>
         <div className="mt-8">

@@ -1,13 +1,13 @@
 // Listes modifiables d'une fiche (formations, Erasmus, expériences) : utilisées par l'éditeur
 // complet (administration) et par l'assistant « Ma fiche ».
 
-import { Pencil } from "lucide-react";
+import { GraduationCap, Pencil } from "lucide-react";
 import Link from "next/link";
 import { supprimerErasmus, supprimerExperience, supprimerFormation } from "@/actions/fiche";
 import { BoutonSupprimer } from "@/components/bouton-supprimer";
 import { Pastille, Vide, classeLien } from "@/components/ui";
 import type { Erasmus, Experience, Formation, Etablissement } from "@/generated/prisma/client";
-import { LIBELLES_NIVEAU, LIBELLES_TYPE_EXPERIENCE, periode } from "@/lib/format";
+import { LIBELLES_NIVEAU, LIBELLES_TYPE_EXPERIENCE, libellePromo, periode } from "@/lib/format";
 import { LIBELLES_DUREE_ERASMUS, nomPays } from "@/lib/pays";
 
 type Proprietes<T> = {
@@ -21,11 +21,37 @@ type Proprietes<T> = {
 
 const champsSuppression = (personneId: string, id: string) => ({ id, personneId });
 
-export function ListeFormations({ personneId, parametre, elements, demanderMotif }: Proprietes<Formation>) {
+type FormationListee = Formation & { mention?: { libelle: string } | null };
+
+export function ListeFormations({
+  personneId,
+  parametre,
+  elements,
+  demanderMotif,
+  biLicence,
+}: Proprietes<FormationListee> & {
+  /** Assistant « Ma fiche » : rappelle en tête que la bi-licence figure déjà automatiquement. */
+  biLicence?: { promoEntree: number; enCours: boolean };
+}) {
   return (
     <>
+    {biLicence && (
+      <div className="mb-3 flex items-start gap-3 rounded-abm-md border border-dashed border-bordeaux-700/25 bg-paper px-4 py-3">
+        <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-abm-sm bg-bordeaux-100 text-bordeaux-700">
+          <GraduationCap size={16} />
+        </span>
+        <div>
+          <p className="font-semibold text-ink">Bi-licence Économie – Science politique</p>
+          <p className="text-sm text-ink-soft">
+            Université de Montpellier · {libellePromo(biLicence.promoEntree).replace("-", "–")}
+            {biLicence.enCours && " · en cours"}
+          </p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-bordeaux-600">Ajoutée automatiquement</p>
+        </div>
+      </div>
+    )}
     {elements.length === 0 ? (
-      <Vide>Aucune formation renseignée.</Vide>
+      <Vide>{biLicence ? "Aucune autre formation renseignée." : "Aucune formation renseignée."}</Vide>
     ) : (
       <ul className="divide-y divide-bordeaux-700/10">
         {elements.map((f) => (
@@ -35,6 +61,17 @@ export function ListeFormations({ personneId, parametre, elements, demanderMotif
               <p className="text-sm text-ink-soft">
                 {[f.parcours, f.etablissement, [f.anneeDebut, f.anneeFin].filter(Boolean).join(" — ")].filter(Boolean).join(" · ")}
               </p>
+              {f.mention !== undefined && (
+                <p className="mt-1 text-xs text-ink-soft">
+                  {f.mention ? (
+                    <>
+                      Mention : <b className="font-semibold text-bordeaux-700">{f.mention.libelle}</b>
+                    </>
+                  ) : (
+                    "Mention non reconnue : le bureau la précisera."
+                  )}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <Link href={`/espace/ma-fiche/formation?${parametre}id=${f.id}`} className={`inline-flex items-center gap-1 text-sm ${classeLien}`}>

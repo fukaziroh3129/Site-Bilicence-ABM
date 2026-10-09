@@ -12,6 +12,13 @@ import { normaliser, slugifier } from "@/lib/format";
 /** Nombre maximum de domaines sur une fiche (pour que les cartes restent lisibles). */
 export const MAX_DOMAINES_PAR_FICHE = 3;
 
+/**
+ * Groupes d'affichage des domaines (formulaires, statistiques), dans l'ordre. Un domaine sans groupe
+ * (ajouté par un membre, ou « Autre ») est rangé dans « Autres domaines ».
+ */
+export const GROUPES_DOMAINES = ["Action publique", "Économie et entreprise", "Société et engagement", "Savoirs, médias, culture"] as const;
+export const GROUPE_AUTRES = "Autres domaines";
+
 /** Tous les domaines, chargés une seule fois par requête. */
 export const chargerDomaines = cache(() =>
   prisma.domaine.findMany({ orderBy: [{ ordre: "asc" }, { libelle: "asc" }] }),
@@ -28,10 +35,16 @@ export async function dictionnaireDomaines() {
   };
 }
 
-/** Options de cases à cocher pour un formulaire. */
+/** Options de cases à cocher pour un formulaire, rangées par groupe (GROUPES_DOMAINES, puis les autres). */
 export async function optionsDomaines() {
   const domaines = await chargerDomaines();
-  return domaines.map((d) => ({ valeur: d.code, libelle: d.libelle }));
+  const rang = (g: string | null) => {
+    const i = GROUPES_DOMAINES.indexOf(g as (typeof GROUPES_DOMAINES)[number]);
+    return i === -1 ? GROUPES_DOMAINES.length : i;
+  };
+  return [...domaines]
+    .sort((a, b) => rang(a.groupe) - rang(b.groupe) || (a.code === "autre" ? 1 : 0) - (b.code === "autre" ? 1 : 0))
+    .map((d) => ({ valeur: d.code, libelle: d.libelle, groupe: rang(d.groupe) < GROUPES_DOMAINES.length ? d.groupe! : GROUPE_AUTRES }));
 }
 
 /**

@@ -29,28 +29,19 @@ export const site = {
     // ajoutée au menu des seuls membres validés par src/app/espace/layout.tsx.
   },
 
-  // Pôles de l'association, dans l'ordre de la page Bureau (frise). Le pictogramme de chaque pôle est
-  // choisi dans src/components/bureau/frise-bureau.tsx. Liste à confirmer par le bureau
-  // (cahier des charges : Sport, Événementiel, Entraide, Culture, Technique ; Communication ajouté).
-  poles: [
-    { code: "communication", nom: "Communication" },
-    { code: "evenementiel", nom: "Événementiel" },
-    { code: "culture", nom: "Culture" },
-    { code: "entraide", nom: "Entraide" },
-    { code: "sport", nom: "Sport" },
-    { code: "technique", nom: "Technique" },
-  ] as const,
+  // Les fonctions du bureau et les pôles ne sont plus ici : le bureau les crée dans Administration → Bureau
+  // (onglet « Fonctions et pôles », table Fonction).
 
   // Mandat du bureau affiché sur la page Bureau (ex. "2026-2027"), ou null.
-  mandat: null as string | null,
+  mandat: "2026-2027" as string | null,
 
   // Identité juridique (mentions légales, politique de confidentialité).
   // Laisser à null ce qui n'est pas encore connu : le site affiche alors « à compléter ».
   association: {
     forme: "Association loi 1901",
-    siege: null as string | null, // adresse du siège social (statuts)
-    rna: null as string | null, // numéro RNA (W…), sur le récépissé de déclaration en préfecture
-    email: null as string | null, // adresse de contact, aussi utilisée pour les demandes RGPD
+    siege: "Faculté d’Économie, Espace Richter, avenue Raymond Dugrand, CS 79606, 34960 Montpellier cedex 2" as string | null, // adresse du siège social (statuts)
+    rna: "W343032338" as string | null, // numéro RNA (W…), sur le récépissé de déclaration en préfecture
+    email: "secretaria@bilicence.fr" as string | null, // adresse de contact, aussi utilisée pour les demandes RGPD
     directeurPublication: "Guillaume Dedieu, président de l’association",
   },
 
@@ -60,7 +51,7 @@ export const site = {
     adresse: "61 Lordou Vironos Street, 6023 Larnaca, Chypre",
     site: "https://www.hostinger.fr",
     // Pays du centre de données du VPS (visible dans le panneau Hostinger), ex. "France".
-    localisationServeur: null as string | null,
+    localisationServeur: "France" as string | null,
   },
   emailing: {
     nom: "Brevo (Sendinblue SAS)",
@@ -107,6 +98,7 @@ export const navigationMembres: EntreeMenu[] = [
     liens: [
       { href: "/espace/annuaire", label: "Annuaire", description: "Retrouver les anciens par domaine, promotion ou formation.", icone: "annuaire", restreint: true },
       { href: "/promotions", label: "Que sont-ils devenus ?", description: "Les parcours des anciens, carte par carte, et les statistiques.", icone: "parcours" },
+      { href: "/espace/statistiques", label: "Statistiques", description: "Où mène la bi-licence : établissements, mentions, domaines.", icone: "statistiques", restreint: true },
     ],
   },
   {
@@ -142,6 +134,7 @@ export const navigationAdmin: EntreeMenu[] = [
     liens: [
       { href: "/admin/domaines", label: "Domaines", description: "Domaines professionnels : contrôle, fusion, renommage.", icone: "domaines" },
       { href: "/admin/etablissements", label: "Établissements", description: "Universités, IEP et écoles : contrôle et fusion des doublons.", icone: "etablissements" },
+      { href: "/admin/mentions", label: "Mentions", description: "Mentions de master et grands domaines d’études : classement, fusion.", icone: "mentions" },
     ],
   },
   { href: "/admin/offres", label: "Offres", icone: "offres" },

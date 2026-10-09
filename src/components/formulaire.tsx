@@ -243,7 +243,10 @@ export function Interrupteur({
   );
 }
 
-/** Groupe de cases à cocher portant le même nom (ex. secteurs). */
+/**
+ * Groupe de cases à cocher portant le même nom (ex. secteurs). Si les options ont un `groupe`, elles
+ * sont présentées par groupe, avec un petit titre (dans l'ordre où les groupes apparaissent).
+ */
 export function CasesMultiples({
   nom,
   libelle,
@@ -251,27 +254,39 @@ export function CasesMultiples({
   aide,
   options,
   defaultValue = [],
-}: BaseChamp & { options: readonly { valeur: string; libelle: string }[]; defaultValue?: string[] }) {
+}: BaseChamp & { options: readonly { valeur: string; libelle: string; groupe?: string }[]; defaultValue?: string[] }) {
   const erreur = etat?.erreurs?.[nom];
   const saisie = etat?.valeurs?.[nom];
   const cochees = etat?.valeurs ? (saisie === undefined ? [] : Array.isArray(saisie) ? saisie : [saisie]) : defaultValue;
+  const groupes = new Map<string, (typeof options)[number][]>();
+  for (const o of options) groupes.set(o.groupe ?? "", [...(groupes.get(o.groupe ?? "") ?? []), o]);
+  const cases = (liste: readonly (typeof options)[number][]) => (
+    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+      {liste.map((o) => (
+        <label key={o.valeur} className="flex items-start gap-2 text-sm text-ink">
+          <input
+            type="checkbox"
+            name={nom}
+            value={o.valeur}
+            defaultChecked={cochees.includes(o.valeur)}
+            className="mt-0.5 size-4 accent-bordeaux-700"
+          />
+          {o.libelle}
+        </label>
+      ))}
+    </div>
+  );
   return (
-    <fieldset>
+    <fieldset aria-describedby={[aide && `${nom}-aide`, erreur && `${nom}-erreur`].filter(Boolean).join(" ") || undefined}>
       <legend className="block text-sm font-semibold text-ink">{libelle}</legend>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-        {options.map((o) => (
-          <label key={o.valeur} className="flex items-start gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              name={nom}
-              value={o.valeur}
-              defaultChecked={cochees.includes(o.valeur)}
-              className="mt-0.5 size-4 accent-bordeaux-700"
-            />
-            {o.libelle}
-          </label>
-        ))}
-      </div>
+      {groupes.size > 1 || !groupes.has("")
+        ? [...groupes].map(([groupe, liste]) => (
+            <div key={groupe} className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-[0.1em] text-ink-soft">{groupe}</p>
+              {cases(liste)}
+            </div>
+          ))
+        : cases(options)}
       <AideEtErreur nom={nom} aide={aide} erreur={erreur} />
     </fieldset>
   );

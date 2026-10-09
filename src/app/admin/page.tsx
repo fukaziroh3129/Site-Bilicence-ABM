@@ -1,8 +1,9 @@
-import { ArrowRight, CalendarPlus, Check, Download, Globe, Landmark, Newspaper, Tags, UserPlus } from "lucide-react";
+import { ArrowRight, CalendarPlus, Check, Download, Globe, GraduationCap, Landmark, Newspaper, Tags, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { BandeauEspace, Panneau, TitreSection, buttonClasses, classeLisere } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { dateLongue, ilYa, libellePromo } from "@/lib/format";
+import { FORMATION_A_CLASSER } from "@/lib/liste-mentions";
 import { maintenance } from "@/lib/maintenance";
 import { estPersonnel, libelleFonction } from "@/lib/profils";
 import { LIBELLES_ROLE, estAdministrateur, type Role } from "@/lib/roles";
@@ -26,6 +27,7 @@ export default async function TableauDeBord() {
     offres,
     domainesAControler,
     etablissementsAControler,
+    formationsAClasser,
     membresActifs,
     fiches,
     fichesPubliques,
@@ -58,6 +60,11 @@ export default async function TableauDeBord() {
       select: { id: true, nom: true, creeLe: true, ajoutePar: { select: { prenom: true, nom: true } }, _count: { select: { sejours: true } } },
       orderBy: { creeLe: "desc" },
     }),
+    prisma.formation.findMany({
+      where: FORMATION_A_CLASSER,
+      select: { id: true, intitule: true, creeLe: true, mentionAControler: true, personne: { select: { prenom: true, nom: true } } },
+      orderBy: { creeLe: "desc" },
+    }),
     prisma.user.count({ where: { statut: "ACTIF" } }),
     prisma.personne.count(),
     prisma.personne.count({ where: { consentementPublic: true } }),
@@ -69,7 +76,7 @@ export default async function TableauDeBord() {
 
   const universitesErasmus = etablissementsAControler.filter((e) => e._count.sejours > 0);
   const autresEtablissements = etablissementsAControler.filter((e) => e._count.sejours === 0);
-  const aControler = domainesAControler.length + etablissementsAControler.length;
+  const aControler = domainesAControler.length + etablissementsAControler.length + formationsAClasser.length;
   const enAttente = nbComptes + nbOffres;
 
   // Fil des derniers ajouts des membres, du plus récent au plus ancien.
@@ -84,6 +91,15 @@ export default async function TableauDeBord() {
       href: "/admin/etablissements",
     })),
     ...domainesAControler.map((d) => ({ id: d.id, icone: Tags, quoi: "Domaine", nom: d.libelle, par: d.ajoutePar, le: d.creeLe, href: "/admin/domaines" })),
+    ...formationsAClasser.map((f) => ({
+      id: f.id,
+      icone: GraduationCap,
+      quoi: f.mentionAControler ? "Mention choisie" : "Mention à classer",
+      nom: f.intitule,
+      par: f.personne,
+      le: f.creeLe,
+      href: "/admin/mentions",
+    })),
   ]
     .sort((a, b) => b.le.getTime() - a.le.getTime())
     .slice(0, 8);
@@ -181,11 +197,12 @@ export default async function TableauDeBord() {
           compteAccent
           action={<span className="text-sm text-ink-soft">Ajouts des membres, déjà utilisables</span>}
         >
-          <ul className="grid gap-3 sm:grid-cols-3">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {[
               { n: universitesErasmus.length, libelle: accorde(universitesErasmus.length, "université Erasmus", "universités Erasmus"), href: "/admin/etablissements" },
               { n: autresEtablissements.length, libelle: accorde(autresEtablissements.length, "établissement de formation", "établissements de formation"), href: "/admin/etablissements" },
               { n: domainesAControler.length, libelle: accorde(domainesAControler.length, "domaine", "domaines"), href: "/admin/domaines" },
+              { n: formationsAClasser.length, libelle: accorde(formationsAClasser.length, "formation à classer (mention)", "formations à classer (mention)"), href: "/admin/mentions" },
             ].map((t) => (
               <li key={t.libelle}>
                 <Link

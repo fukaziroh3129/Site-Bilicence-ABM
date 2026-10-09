@@ -1,21 +1,23 @@
-// « Ma fiche » en six étapes, avec barre de progression et aperçu de la carte publique.
+// « Ma fiche » en six étapes, avec barre de progression et aperçu de la carte publique.
 // Les étapes à formulaire n'enregistrent que leurs champs ; les étapes à liste (études,
 // expériences, Erasmus) renvoient vers les pages d'ajout, qui ramènent ensuite ici.
 
 import { ArrowLeft, ArrowRight, Check, Clock, Eye, Plus } from "lucide-react";
 import Link from "next/link";
 import { SceauFiligrane } from "@/components/anime";
+import { BasculeEtape } from "@/components/fiche/bascule-etape";
 import { EtapeAujourdhui, EtapeCarte, EtapeIdentite } from "@/components/fiche/formulaires-etapes";
 import { ListeErasmus, ListeExperiences, ListeFormations } from "@/components/fiche/listes-fiche";
 import { ApercuCarte } from "@/components/parcours/apercu-carte";
 import type { CarteParcours } from "@/components/parcours/types";
 import { buttonClasses, classeLien } from "@/components/ui";
 import type { Erasmus, Experience, Formation, Personne, Etablissement } from "@/generated/prisma/client";
-import { ETAPES_FICHE, completude, encouragement, type EtapeFiche } from "@/lib/completude";
+import { ETAPES_FICHE, completude, encouragement, estEnBiLicence, type EtapeFiche } from "@/lib/completude";
 import { MAX_DOMAINES_PAR_FICHE, optionsDomaines } from "@/lib/domaines";
+import { promoEnCours } from "@/lib/format";
 
 type PersonneComplete = Personne & {
-  formations: Formation[];
+  formations: (Formation & { mention: { libelle: string } | null })[];
   experiences: Experience[];
   erasmus: (Erasmus & { universite: Etablissement })[];
 };
@@ -26,7 +28,7 @@ const INTRODUCTIONS: Record<EtapeFiche, string> = {
   etudes: "Masters, écoles, doubles diplômes… Chaque formation s’ajoute à votre parcours, après la bi-licence.",
   experiences:
     "Stages, alternances, emplois, engagement associatif. Vos stages alimentent l’archive des stages, très consultée par les plus jeunes : missions, comment vous les avez obtenus, rapport…",
-  erasmus: "Un semestre ou une année à l’étranger ? Votre retour aide celles et ceux qui hésitent à partir. Étape facultative.",
+  erasmus: "Un semestre ou une année à l’étranger ? Votre retour aide celles et ceux qui hésitent à partir. Pas parti ? Indiquez-le simplement ci-dessous.",
   carte: "Deux phrases pour vous présenter et un conseil : ce sont les mots que liront les étudiants.",
 };
 
@@ -50,15 +52,19 @@ export async function AssistantFiche({
   carte: CarteParcours;
   courts: Record<string, string>;
 }) {
-  const avancement = completude({ ...personne, nbFormations: personne.formations.length, nbExperiences: personne.experiences.length });
+  const avancement = completude({ ...personne, nbFormations: personne.formations.length, nbExperiences: personne.experiences.length, nbErasmus: personne.erasmus.length });
   const rang = ETAPES_FICHE.findIndex((e) => e.cle === etape);
   const courante = ETAPES_FICHE[rang];
   const precedente = ETAPES_FICHE[rang - 1];
   const suivante = ETAPES_FICHE[rang + 1];
   const liste = LISTES[etape];
   const nbListe = { etudes: personne.formations.length, experiences: personne.experiences.length, erasmus: personne.erasmus.length };
-  const etapeFaite = (cle: EtapeFiche) =>
-    !avancement.etapesIncompletes.has(cle) && (cle !== "erasmus" || personne.erasmus.length > 0);
+  const etapeFaite = (cle: EtapeFiche) => !avancement.etapesIncompletes.has(cle);
+  // Étapes à liste : la personne peut indiquer qu'elle n'a rien à y mettre (l'étape compte alors comme remplie).
+  const enBiLicence = estEnBiLicence(personne);
+  const sansElement = { etudes: enBiLicence, experiences: personne.sansExperience, erasmus: personne.sansErasmus };
+  const etapeListe = etape === "etudes" || etape === "experiences" || etape === "erasmus" ? etape : null;
+  const declareSans = etapeListe ? sansElement[etapeListe] : false;
 
   return (
     <div className="space-y-8">
@@ -146,7 +152,7 @@ export async function AssistantFiche({
 
           {enregistre && (
             <p role="status" className="apparait mt-5 inline-flex items-center gap-2 rounded-abm-sm bg-bordeaux-100 px-3 py-2 text-sm font-semibold text-bordeaux-700">
-              <Check size={16} aria-hidden /> Étape « {ETAPES_FICHE.find((e) => e.cle === enregistre)?.titre} » enregistrée.
+              <Check size={16} aria-hidden /> Étape « {ETAPES_FICHE.find((e) => e.cle === enregistre)?.titre} » enregistrée.
             </p>
           )}
 
@@ -159,16 +165,53 @@ export async function AssistantFiche({
 
             {liste && (
               <div className="space-y-6">
-                {etape === "etudes" && <ListeFormations personneId={personne.id} parametre="" elements={personne.formations} />}
+                {etape === "etudes" && (
+                  <ListeFormations
+                    personneId={personne.id}
+                    parametre=""
+                    elements={personne.formations}
+                    biLicence={{ promoEntree: personne.promoEntree, enCours: promoEnCours(personne.promoEntree) }}
+                  />
+                )}
                 {etape === "experiences" && <ListeExperiences personneId={personne.id} parametre="" elements={personne.experiences} />}
                 {etape === "erasmus" && <ListeErasmus personneId={personne.id} parametre="" elements={personne.erasmus} />}
+
+                {/* « Rien à ajouter ici » : seulement tant que la liste est vide (ou si la personne l'a déjà indiqué). */}
+                {etape === "etudes" && (personne.formations.length === 0 || enBiLicence) && (
+                  <BasculeEtape
+                    personneId={personne.id}
+                    etape="etudes"
+                    active={enBiLicence}
+                    titre="Je suis encore en bi-licence"
+                    aide="Votre étape « Études » est alors complète ; vous ajouterez votre master plus tard."
+                  />
+                )}
+                {etape === "experiences" && personne.experiences.length === 0 && (
+                  <BasculeEtape
+                    personneId={personne.id}
+                    etape="experiences"
+                    active={personne.sansExperience}
+                    titre="Je n’ai pas encore fait de stage ni d’expérience"
+                    aide="Se désactive tout seul dès que vous ajoutez une expérience."
+                  />
+                )}
+                {etape === "erasmus" && personne.erasmus.length === 0 && (
+                  <BasculeEtape
+                    personneId={personne.id}
+                    etape="erasmus"
+                    active={personne.sansErasmus}
+                    titre="Je n’ai pas fait d’Erasmus"
+                    aide="Se désactive tout seul dès que vous ajoutez un séjour."
+                  />
+                )}
+
                 <div className="flex flex-wrap items-center gap-4 border-t border-bordeaux-700/10 pt-6">
-                  <Link href={liste.ajout} className={buttonClasses("primary")}>
-                    <Plus size={16} aria-hidden /> {liste.libelle}
+                  <Link href={liste.ajout} className={buttonClasses(declareSans ? "outline" : "primary")}>
+                    <Plus size={16} aria-hidden /> {etape === "etudes" && enBiLicence ? "Ajouter une formation suivie en parallèle" : liste.libelle}
                   </Link>
                   {suivante && (
                     <Link href={`/espace/ma-fiche?etape=${suivante.cle}`} className={`inline-flex items-center gap-1 text-sm font-semibold ${classeLien}`}>
-                      {nbListe[etape as keyof typeof nbListe] > 0 ? "Continuer" : "Passer cette étape"} <ArrowRight size={15} aria-hidden />
+                      {nbListe[etape as keyof typeof nbListe] > 0 || declareSans ? "Continuer" : "Passer cette étape"} <ArrowRight size={15} aria-hidden />
                     </Link>
                   )}
                 </div>
@@ -208,8 +251,8 @@ export async function AssistantFiche({
             <p className="eyebrow text-bordeaux-500">Aperçu de votre carte</p>
             <p className="mb-4 mt-1 text-xs text-ink-soft">
               {personne.consentementPublic
-                ? "Telle qu’elle apparaît sur la page publique « Que sont-ils devenus ? ». Mise à jour à chaque enregistrement."
-                : "Elle n’apparaîtra sur la page publique que si vous l’acceptez (étape « Votre carte »). Mise à jour à chaque enregistrement."}
+                ? "Telle qu’elle apparaît sur la page publique « Que sont-ils devenus ? ». Mise à jour à chaque enregistrement."
+                : "Elle n’apparaîtra sur la page publique que si vous l’acceptez (étape « Votre carte »). Mise à jour à chaque enregistrement."}
             </p>
             <ApercuCarte carte={carte} courts={courts} />
           </div>

@@ -2,7 +2,7 @@ import { Download, IdCard, KeyRound, Mail, ShieldCheck, Trash2 } from "lucide-re
 import Link from "next/link";
 import { EncartCompletude } from "@/components/fiche/encart-completude";
 import { BandeauEspace, Initiales, Panneau, buttonClasses, classeLien } from "@/components/ui";
-import { completude } from "@/lib/completude";
+import { COMPTES_FICHE, completudeDe } from "@/lib/completude";
 import { prisma } from "@/lib/db";
 import { libellePromo, moisAnnee } from "@/lib/format";
 import { estPersonnel, libelleFonction } from "@/lib/profils";
@@ -30,9 +30,9 @@ export default async function MonCompte({ searchParams }: PageProps<"/espace/com
   const sommaire = personnel ? SOMMAIRE.filter((s) => s.id !== "ma-fiche") : SOMMAIRE;
 
   const fiche = user.personneId
-    ? await prisma.personne.findUnique({ where: { id: user.personneId }, include: { _count: { select: { formations: true, experiences: true } } } })
+    ? await prisma.personne.findUnique({ where: { id: user.personneId }, include: { _count: { select: COMPTES_FICHE } } })
     : null;
-  const avancement = fiche ? completude({ ...fiche, nbFormations: fiche._count.formations, nbExperiences: fiche._count.experiences }) : null;
+  const avancement = fiche ? completudeDe(fiche) : null;
   const prenom = user.prenom || user.name.split(" ")[0] || "";
   const nom = user.nom || user.name.split(" ").slice(1).join(" ") || "";
 

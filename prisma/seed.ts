@@ -15,6 +15,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { detecterMentionsEnLot } from "../scripts/mentions-detecter";
 import { relierEtablissements } from "../scripts/relier-etablissements";
 import { creerExemplesErasmus } from "./exemples-erasmus";
 
@@ -75,6 +76,7 @@ async function main() {
   await prisma.etablissement.deleteMany();
   await prisma.article.deleteMany();
   await prisma.membreBureau.deleteMany();
+  await prisma.fonction.deleteMany();
 
   // ─── Fiches ────────────────────────────────────────────────────────────────
   const claire = await prisma.personne.create({
@@ -177,6 +179,7 @@ async function main() {
   // Formations reliées à la liste commune des établissements (ADM-03) ; rien à contrôler dans les exemples.
   await relierEtablissements(prisma);
   await prisma.etablissement.updateMany({ data: { aControler: false } });
+  await detecterMentionsEnLot(prisma);
 
   // ─── Vie de l'association ──────────────────────────────────────────────────
   const admin = await prisma.user.findUniqueOrThrow({ where: { email: "admin@exemple.test" } });
@@ -224,16 +227,23 @@ async function main() {
     ],
   });
 
-  await prisma.membreBureau.createMany({
-    data: [
-      { prenom: "Prénom", nom: "Exemple", role: "Présidence", ordre: 1 },
-      { prenom: "Prénom", nom: "Exemple", role: "Trésorerie", ordre: 2 },
-      { prenom: "Prénom", nom: "Exemple", role: "Responsable du pôle Technique", pole: "technique", ordre: 3 },
-      { prenom: "Prénom", nom: "Exemple", role: "Responsable du pôle Communication", pole: "communication", ordre: 4 },
-      { prenom: "Prénom", nom: "Exemple", role: "Membre du pôle Communication", pole: "communication", ordre: 5 },
-      { prenom: "Prénom", nom: "Exemple", role: "Responsable du pôle Entraide", pole: "entraide", ordre: 6 },
-    ],
-  });
+  // Fonctions du bureau et pôles (étiquettes), puis membres fictifs rattachés à une ou plusieurs étiquettes.
+  type DonneesFonction = { nom: string; niveau: "BUREAU" | "POLE"; ordre: number; icone?: string; description?: string };
+  const fonctionsExemple: DonneesFonction[] = [
+    { nom: "Présidence", niveau: "BUREAU", ordre: 1 },
+    { nom: "Trésorerie", niveau: "BUREAU", ordre: 2 },
+    { nom: "Événementiel", niveau: "POLE", ordre: 1, icone: "fete", description: "Soirées, rencontres et retrouvailles des promotions." },
+    { nom: "Culture", niveau: "POLE", ordre: 2, icone: "culture" },
+    { nom: "Entraide", niveau: "POLE", ordre: 3, icone: "entraide", description: "Tutorat, conseils d’orientation et partage de cours." },
+    { nom: "Sport", niveau: "POLE", ordre: 4, icone: "sport" },
+    { nom: "Technique", niveau: "POLE", ordre: 5, icone: "technique" },
+  ];
+  const [presidence, tresorerie, , , entraide, , technique] = await Promise.all(fonctionsExemple.map((data) => prisma.fonction.create({ data })));
+  const exemple = { prenom: "Prénom", nom: "Exemple" };
+  await prisma.membreBureau.create({ data: { ...exemple, ordre: 1, fonctions: { connect: [{ id: presidence.id }] } } });
+  await prisma.membreBureau.create({ data: { ...exemple, ordre: 2, fonctions: { connect: [{ id: tresorerie.id }] } } });
+  await prisma.membreBureau.create({ data: { ...exemple, role: "Responsable", ordre: 3, fonctions: { connect: [{ id: technique.id }] } } });
+  await prisma.membreBureau.create({ data: { ...exemple, role: "Responsable", ordre: 4, fonctions: { connect: [{ id: entraide.id }, { id: tresorerie.id }] } } });
 
   console.log("Base locale remplie avec des données fictives.");
   console.log("Comptes : admin@exemple.test, animateur@exemple.test, membre@exemple.test, attente@exemple.test (mot de passe : SEED_MOT_DE_PASSE).");

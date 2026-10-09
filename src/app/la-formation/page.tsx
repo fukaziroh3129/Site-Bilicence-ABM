@@ -1,11 +1,12 @@
 import { ArrowRight, Building2, Globe2, GraduationCap, Layers, Mic, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Apparition, Compteur, ElementGroupe, Groupe, Ornement } from "@/components/anime";
 import { OuvrirCursus } from "@/components/formation/carte-cursus";
 import { StatsDevenir } from "@/components/statistiques/stats-devenir";
-import { AFaire, ImageAFaire, PageHeader, classeLien } from "@/components/ui";
+import { ImageAFaire, PageHeader, classeLien } from "@/components/ui";
 import { PARCOURSUP, RESPONSABLES, SOURCES } from "@/lib/formation";
 import { site } from "@/lib/site";
 import { statistiquesDevenir } from "@/lib/statistiques";
@@ -96,7 +97,14 @@ export default async function LaFormation() {
             </Apparition>
           </div>
           <Apparition delai={0.15}>
-            <ImageAFaire label="Photo à ajouter — la formation (promotion, campus ou cours)" ratio="4 / 3" />
+            <Image
+              src="/images/la-formation.webp"
+              alt="À gauche, un campus de l’université vu d’en haut, entre bâtiments et arbres ; à droite, des étudiants qui discutent sous des arcades, près d’une fontaine."
+              width={1920}
+              height={1080}
+              sizes="(min-width: 1024px) 45vw, 100vw"
+              className="aspect-video w-full rounded-abm-md object-cover shadow-abm-card"
+            />
           </Apparition>
         </div>
 
@@ -158,9 +166,9 @@ export default async function LaFormation() {
                 perspective entre les deux disciplines et l’aisance à l’oral. Elle se prépare pendant les deux semestres de
                 troisième année.
               </p>
-              <p className="mt-6 inline-block rounded-abm-sm border border-dashed border-white/45 px-4 py-2 text-sm text-white/80">
-                <span className="font-semibold text-white">À compléter — </span>
-                modalités précises (durée, jury, sujets), présentation provisoire pour la version de démonstration.
+              <p className="mt-6 text-sm text-white/80">
+                Les modalités détaillées de l’épreuve (durée, jury, calendrier) sont communiquées aux étudiants par la
+                faculté.
               </p>
             </div>
           </div>
@@ -264,9 +272,7 @@ export default async function LaFormation() {
                 <div>
                   <p className="font-display text-2xl font-bold text-bordeaux-700">{r.nom}</p>
                   <p className="eyebrow mt-1 text-ink-soft">{r.fonction}</p>
-                  <div className="mt-4">
-                    <AFaire>courte présentation (discipline, fonction à l’université), à faire valider par l’intéressé.</AFaire>
-                  </div>
+                  <p className="mt-4 text-sm leading-relaxed text-ink-soft">{r.presentation}</p>
                 </div>
               </ElementGroupe>
             ))}
