@@ -16,10 +16,12 @@ type ProprietesFenetre = {
   /** Zone fixe en bas de la fenêtre (liens, boutons). */
   pied?: React.ReactNode;
   etroite?: boolean;
+  /** Panneau plein hauteur qui glisse depuis la droite. */
+  laterale?: boolean;
   children: React.ReactNode;
 };
 
-export function Fenetre({ ouverte, onFermer, titre, surtitre, pied, etroite, children }: ProprietesFenetre) {
+export function Fenetre({ ouverte, onFermer, titre, surtitre, pied, etroite, laterale, children }: ProprietesFenetre) {
   const ref = useRef<HTMLDialogElement>(null);
   const idTitre = useId();
 
@@ -44,7 +46,7 @@ export function Fenetre({ ouverte, onFermer, titre, surtitre, pied, etroite, chi
     <dialog
       ref={ref}
       aria-labelledby={idTitre}
-      className={`${styles.fenetre} ${etroite ? styles.etroite : ""}`}
+      className={`${styles.fenetre} ${etroite ? styles.etroite : ""} ${laterale ? styles.laterale : ""}`}
       onClose={onFermer}
       onClick={(e) => {
         if (e.target === e.currentTarget) onFermer(); // clic sur le fond

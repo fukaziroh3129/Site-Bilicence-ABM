@@ -18,7 +18,6 @@ import { journaliser } from "@/lib/journal";
 import { estPersonnel } from "@/lib/profils";
 import { estDuBureau, peutChangerRole, peutGererCompte } from "@/lib/roles";
 import { exigerAdmin, exigerBureau } from "@/lib/session";
-import { site } from "@/lib/site";
 
 function rafraichirTout() {
   revalidatePath("/", "layout");
@@ -314,21 +313,24 @@ export async function supprimerArticle(formData: FormData) {
 
 // ─── Composition du bureau ─────────────────────────────────────────────────────
 
-const schemaMembreBureau = z.object({
-  id: z.string().optional(),
-  prenom: champ.texte(80),
-  nom: champ.texte(80),
-  role: champ.texte(120),
-  pole: champ.choixFacultatif(site.poles.map((p) => p.code) as [string, ...string[]]),
-  ordre: champ.entierFacultatif(0, 999),
-  retirerImage: champ.case(),
-});
+/** Schéma d'un membre du bureau ; les étiquettes autorisées sont celles qui existent en base. */
+const schemaMembreBureau = (fonctionsExistantes: string[]) =>
+  z.object({
+    id: z.string().optional(),
+    prenom: champ.texte(80),
+    nom: champ.texte(80),
+    role: champ.texteFacultatif(120),
+    fonctions: champ.liste(fonctionsExistantes).refine((l) => l.length > 0, "Choisissez au moins une étiquette."),
+    ordre: champ.entierFacultatif(0, 999),
+    retirerImage: champ.case(),
+  });
 
 export async function enregistrerMembreBureau(_etat: EtatFormulaire, formData: FormData): Promise<EtatFormulaire> {
   await exigerBureau();
-  const resultat = valider(schemaMembreBureau, formData);
+  const existantes = await prisma.fonction.findMany({ select: { id: true } });
+  const resultat = valider(schemaMembreBureau(existantes.map((f) => f.id)), formData);
   if (!resultat.ok) return resultat.etat;
-  const { id, retirerImage, ordre, ...d } = resultat.donnees;
+  const { id, retirerImage, ordre, fonctions, ...d } = resultat.donnees;
 
   const photo = formData.get("image") as File | null;
   const erreurImage = await verifierImage(photo);
@@ -345,8 +347,9 @@ export async function enregistrerMembreBureau(_etat: EtatFormulaire, formData: F
   }
 
   const donnees = { ...d, ordre: ordre ?? 0, photo: cheminPhoto };
-  if (id) await prisma.membreBureau.update({ where: { id }, data: donnees });
-  else await prisma.membreBureau.create({ data: donnees });
+  const liens = fonctions.map((f) => ({ id: f }));
+  if (id) await prisma.membreBureau.update({ where: { id }, data: { ...donnees, fonctions: { set: liens } } });
+  else await prisma.membreBureau.create({ data: { ...donnees, fonctions: { connect: liens } } });
 
   rafraichirTout();
   redirect("/admin/bureau");

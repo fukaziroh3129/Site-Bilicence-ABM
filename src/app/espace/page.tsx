@@ -6,7 +6,7 @@ import { EncartCompletude } from "@/components/fiche/encart-completude";
 import { BandeauEspace, BlocDate, Panneau, Vide, buttonClasses, classeLien } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { LIBELLES_TYPE_OFFRE, heure } from "@/lib/format";
-import { completude, encouragement } from "@/lib/completude";
+import { COMPTES_FICHE, completudeDe, encouragement } from "@/lib/completude";
 import { estPersonnel } from "@/lib/profils";
 import { exigerCompte } from "@/lib/session";
 
@@ -22,10 +22,10 @@ const raccourcis = [
 /** Accueil d'un compte en attente de validation : ce qui est fait, ce qui reste, ce qu'il peut faire. */
 async function AccueilEnAttente({ prenom, personneId, personnel }: { prenom: string; personneId: string | null; personnel: boolean }) {
   const fiche = personneId && !personnel
-    ? await prisma.personne.findUnique({ where: { id: personneId }, include: { _count: { select: { formations: true, experiences: true } } } })
+    ? await prisma.personne.findUnique({ where: { id: personneId }, include: { _count: { select: COMPTES_FICHE } } })
     : null;
   const avancement = fiche
-    ? completude({ ...fiche, nbFormations: fiche._count.formations, nbExperiences: fiche._count.experiences })
+    ? completudeDe(fiche)
     : null;
 
   const etapes = [
@@ -130,11 +130,11 @@ export default async function AccueilEspace() {
       take: 3,
     }),
     user.personneId && !personnel
-      ? prisma.personne.findUnique({ where: { id: user.personneId }, include: { _count: { select: { formations: true, experiences: true } } } })
+      ? prisma.personne.findUnique({ where: { id: user.personneId }, include: { _count: { select: COMPTES_FICHE } } })
       : null,
   ]);
 
-  const avancement = fiche ? completude({ ...fiche, nbFormations: fiche._count.formations, nbExperiences: fiche._count.experiences }) : null;
+  const avancement = fiche ? completudeDe(fiche) : null;
 
   return (
     <div className="space-y-10">

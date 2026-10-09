@@ -29,17 +29,8 @@ export const site = {
     // ajoutée au menu des seuls membres validés par src/app/espace/layout.tsx.
   },
 
-  // Pôles de l'association, dans l'ordre de la page Bureau (frise). Le pictogramme de chaque pôle est
-  // choisi dans src/components/bureau/frise-bureau.tsx. Liste à confirmer par le bureau
-  // (cahier des charges : Sport, Événementiel, Entraide, Culture, Technique ; Communication ajouté).
-  poles: [
-    { code: "communication", nom: "Communication" },
-    { code: "evenementiel", nom: "Événementiel" },
-    { code: "culture", nom: "Culture" },
-    { code: "entraide", nom: "Entraide" },
-    { code: "sport", nom: "Sport" },
-    { code: "technique", nom: "Technique" },
-  ] as const,
+  // Les fonctions du bureau et les pôles ne sont plus ici : le bureau les crée dans Administration → Bureau
+  // (onglet « Fonctions et pôles », table Fonction).
 
   // Mandat du bureau affiché sur la page Bureau (ex. "2026-2027"), ou null.
   mandat: null as string | null,
@@ -107,6 +98,7 @@ export const navigationMembres: EntreeMenu[] = [
     liens: [
       { href: "/espace/annuaire", label: "Annuaire", description: "Retrouver les anciens par domaine, promotion ou formation.", icone: "annuaire", restreint: true },
       { href: "/promotions", label: "Que sont-ils devenus ?", description: "Les parcours des anciens, carte par carte, et les statistiques.", icone: "parcours" },
+      { href: "/espace/statistiques", label: "Statistiques", description: "Où mène la bi-licence : établissements, mentions, domaines.", icone: "statistiques", restreint: true },
     ],
   },
   {
@@ -142,6 +134,7 @@ export const navigationAdmin: EntreeMenu[] = [
     liens: [
       { href: "/admin/domaines", label: "Domaines", description: "Domaines professionnels : contrôle, fusion, renommage.", icone: "domaines" },
       { href: "/admin/etablissements", label: "Établissements", description: "Universités, IEP et écoles : contrôle et fusion des doublons.", icone: "etablissements" },
+      { href: "/admin/mentions", label: "Mentions", description: "Mentions de master et grands domaines d’études : classement, fusion.", icone: "mentions" },
     ],
   },
   { href: "/admin/offres", label: "Offres", icone: "offres" },

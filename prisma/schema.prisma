@@ -178,6 +178,11 @@ model Personne {
   afficherEmail     Boolean @default(false)
   afficherTelephone Boolean @default(false)
 
+  // « Je n'ai pas encore fait de stage / d'Erasmus » : l'étape compte comme remplie. Remis à faux dès
+  // qu'une expérience ou un séjour est ajouté (la fiche ne peut pas dire les deux à la fois).
+  sansExperience Boolean @default(false)
+  sansErasmus    Boolean @default(false)
+
   // RGPD : apparition dans l'historique public des promotions uniquement après accord explicite
   consentementPublic   Boolean   @default(false)
   consentementPublicLe DateTime?
@@ -225,11 +230,51 @@ model Formation {
   etablissementRef Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
   anneeDebut       Int?
   anneeFin         Int?
+  // Mention de master, reconnue à partir de l'intitulé (src/lib/mentions.ts) ou choisie à la main.
+  // mentionAuto : la détection peut la recalculer ; faux = choix d'une personne, jamais écrasé.
+  // mentionAControler : choisie par un membre, à vérifier par le bureau (/admin/mentions).
+  mentionId         String?
+  mention           Mention? @relation(fields: [mentionId], references: [id], onDelete: SetNull)
+  mentionAuto       Boolean  @default(true)
+  mentionAControler Boolean  @default(false)
   creeLe           DateTime       @default(now())
   modifieLe        DateTime       @updatedAt
 
   @@index([personneId])
   @@index([etablissementId])
+  @@index([mentionId])
+}
+
+// Grands domaines d'études (« Économie », « Science politique & relations internationales »…) : les
+// familles de mentions, qui forment les regroupements et les couleurs des statistiques. Gérés par le
+// bureau dans /admin/mentions (ajouter, renommer, fusionner, supprimer s'il est vide).
+model FamilleMention {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  libelle   String
+  ordre     Int      @default(100)
+  creeLe    DateTime @default(now())
+  modifieLe DateTime @updatedAt
+
+  mentions Mention[]
+}
+
+// Mentions de master (« Relations internationales »…). Les variantes sont les autres écritures que la
+// détection rattache à la mention (« RI », « relations int »…), enregistrées telles que saisies et
+// nettoyées (accents, majuscules, mots vides) au moment de la comparaison.
+model Mention {
+  id        String         @id @default(cuid())
+  code      String         @unique
+  libelle   String
+  familleId String
+  famille   FamilleMention @relation(fields: [familleId], references: [id], onDelete: Restrict)
+  variantes String[]
+  creeLe    DateTime       @default(now())
+  modifieLe DateTime       @updatedAt
+
+  formations Formation[]
+
+  @@index([familleId])
 }
 
 enum TypeExperience {
@@ -289,6 +334,7 @@ model Domaine {
   code        String   @unique
   libelle     String // libellé complet, dans les formulaires
   court       String // libellé court, dans les filtres et sur les cartes
+  groupe      String? // groupe d'affichage (GROUPES_DOMAINES dans src/lib/domaines.ts) ; vide = « Autres »
   // Ajouté par un membre : utilisable tout de suite, à contrôler par le bureau (tableau de bord).
   aControler  Boolean  @default(false)
   ajouteParId String?
@@ -454,14 +500,31 @@ model PostSocial {
   @@index([publie, publieLe])
 }
 
+// Étiquette attribuable à une ou plusieurs personnes du bureau : une fonction du bureau (présidence,
+// trésorerie…, affichées ensemble en haut de la page) ou un pôle (affiché en grand en dessous).
+enum NiveauFonction {
+  BUREAU
+  POLE
+}
+
+model Fonction {
+  id          String         @id @default(cuid())
+  nom         String // « Présidence », « Trésorerie », « Sport »…
+  niveau      NiveauFonction @default(POLE)
+  ordre       Int            @default(0) // rang à l'intérieur du niveau (petit = plus haut)
+  icone       String? // clé de pictogramme (src/lib/fonctions-bureau.ts), pôles seulement
+  description String? // phrase facultative sous le nom d'un pôle
+  membres     MembreBureau[]
+}
+
 model MembreBureau {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   prenom    String
   nom       String
-  role      String // ex. « Président », « Responsable du pôle Sport »
-  pole      String? // code du pôle (src/lib/site.ts) ; vide = bureau restreint (présidence, trésorerie…)
+  role      String? // précision libre, ex. « Responsable », « Membre »
+  fonctions Fonction[]
   photo     String? // chemin d'un fichier téléversé
-  ordre     Int      @default(0) // ordre d'affichage
-  creeLe    DateTime @default(now())
-  modifieLe DateTime @updatedAt
+  ordre     Int        @default(0) // ordre d'affichage
+  creeLe    DateTime   @default(now())
+  modifieLe DateTime   @updatedAt
 }

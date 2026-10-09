@@ -10,32 +10,38 @@ import { motion, useReducedMotion, useScroll, useSpring, type Variants } from "m
 import Image from "next/image";
 import { useRef } from "react";
 
-export type MembreFrise = { id: string; prenom: string; nom: string; role: string; photo: string | null };
-export type PoleFrise = { code: string; nom: string; membres: MembreFrise[] };
+/** `intitule` : texte sous le nom (fonction du bureau, précision libre), vide si rien à dire. */
+export type MembreFrise = { id: string; prenom: string; nom: string; intitule: string; photo: string | null };
+export type PoleFrise = { id: string; nom: string; description: string | null; icone: string | null; membres: MembreFrise[] };
 
-/** Pictogramme de chaque pôle (Lucide). Un pôle inconnu prend le pictogramme « groupe ». */
+/** Pictogramme de chaque pôle (Lucide), choisi par clé dans l'administration (src/lib/fonctions-bureau.ts). */
 const ICONES: Record<string, LucideIcon> = {
-  communication: Megaphone,
-  evenementiel: PartyPopper,
+  megaphone: Megaphone,
+  fete: PartyPopper,
   culture: Drama,
   entraide: BookOpen,
   sport: Trophy,
   technique: Wrench,
+  groupe: Users,
 };
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const ECLATS = 8;
 
 /** Portrait : photo, ou emplacement signalé « photo à ajouter ». */
-function Portrait({ membre, taille }: { membre: MembreFrise; taille: "grand" | "petit" }) {
-  const classe = taille === "grand" ? "size-40 sm:size-48" : "size-16";
+const CLASSES_PORTRAIT = { grand: "size-40 sm:size-48", moyen: "size-20 sm:size-24", petit: "size-16" } as const;
+const PIXELS_PORTRAIT = { grand: 400, moyen: 240, petit: 160 } as const;
+const TEXTE_INITIALES = { grand: "text-4xl", moyen: "text-2xl", petit: "text-lg" } as const;
+
+function Portrait({ membre, taille }: { membre: MembreFrise; taille: keyof typeof CLASSES_PORTRAIT }) {
+  const classe = CLASSES_PORTRAIT[taille];
   if (membre.photo) {
     return (
       <Image
         src={membre.photo}
         alt={`${membre.prenom} ${membre.nom}`}
-        width={taille === "grand" ? 400 : 160}
-        height={taille === "grand" ? 400 : 160}
+        width={PIXELS_PORTRAIT[taille]}
+        height={PIXELS_PORTRAIT[taille]}
         unoptimized
         className={`${classe} shrink-0 rounded-full object-cover shadow-abm-card`}
       />
@@ -44,7 +50,7 @@ function Portrait({ membre, taille }: { membre: MembreFrise; taille: "grand" | "
   return (
     <span
       title={`Photo à ajouter — ${membre.prenom} ${membre.nom}`}
-      className={`${classe} flex shrink-0 items-center justify-center rounded-full border border-dashed border-bordeaux-300 bg-white font-display font-bold text-bordeaux-400 ${taille === "grand" ? "text-4xl" : "text-lg"}`}
+      className={`${classe} flex shrink-0 items-center justify-center rounded-full border border-dashed border-bordeaux-300 bg-white font-display font-bold text-bordeaux-400 ${TEXTE_INITIALES[taille]}`}
     >
       <span aria-hidden>
         {membre.prenom[0]}
@@ -90,7 +96,7 @@ const membre = (cote: "gauche" | "droite"): Variants => ({
 
 function Pole({ pole, index }: { pole: PoleFrise; index: number }) {
   const reduit = useReducedMotion();
-  const Icone = ICONES[pole.code] ?? Users;
+  const Icone = (pole.icone && ICONES[pole.icone]) || Users;
   // Sur grand écran, les pôles alternent à gauche et à droite de la ligne.
   const cote = index % 2 === 0 ? "droite" : "gauche";
 
@@ -127,26 +133,27 @@ function Pole({ pole, index }: { pole: PoleFrise; index: number }) {
       <div className={`pl-20 md:pl-0 ${cote === "droite" ? "md:col-start-2 md:pl-16" : "md:col-start-1 md:pr-16 md:text-right"}`}>
         <motion.div variants={titrePole(cote)} className="pt-2">
           <p className="eyebrow text-bordeaux-500">Pôle</p>
-          <h3 className="font-display text-3xl font-bold text-bordeaux-700">{pole.nom}</h3>
+          <h3 className="font-display text-4xl font-bold text-bordeaux-700 sm:text-5xl">{pole.nom}</h3>
+          {pole.description && <p className="mt-3 max-w-[48ch] text-ink-soft md:inline-block">{pole.description}</p>}
         </motion.div>
         {pole.membres.length === 0 ? (
-          <motion.p variants={titrePole(cote)} className="mt-3 text-sm text-ink-soft">
+          <motion.p variants={titrePole(cote)} className="mt-4 text-sm text-ink-soft">
             Membres à ajouter (Administration → Bureau).
           </motion.p>
         ) : (
-          <motion.ul variants={groupeMembres} className={`mt-5 flex flex-wrap gap-3 ${cote === "gauche" ? "md:justify-end" : ""}`}>
+          <motion.ul variants={groupeMembres} className={`mt-6 flex flex-wrap gap-4 ${cote === "gauche" ? "md:justify-end" : ""}`}>
             {pole.membres.map((m) => (
               <motion.li
                 key={m.id}
                 variants={membre(cote)}
-                className="flex w-full items-center gap-3 rounded-abm-md border border-bordeaux-700/15 bg-white p-3 pr-5 text-left shadow-abm-card sm:w-auto"
+                className="flex w-full items-center gap-4 rounded-abm-md border border-bordeaux-700/15 bg-white p-4 pr-6 text-left shadow-abm-card sm:w-auto"
               >
-                <Portrait membre={m} taille="petit" />
+                <Portrait membre={m} taille="moyen" />
                 <span>
-                  <span className="block font-display text-lg font-bold leading-tight text-bordeaux-700">
+                  <span className="block font-display text-xl font-bold leading-tight text-bordeaux-700">
                     {m.prenom} {m.nom}
                   </span>
-                  <span className="block text-sm text-ink-soft">{m.role}</span>
+                  {m.intitule && <span className="block text-sm text-ink-soft">{m.intitule}</span>}
                 </span>
               </motion.li>
             ))}
@@ -193,7 +200,7 @@ export function FriseBureau({
           <p className="mt-5 font-display text-3xl font-bold text-bordeaux-700 sm:text-4xl">
             {president.prenom} {president.nom}
           </p>
-          <p className="eyebrow mt-1 text-ink-soft">{president.role}</p>
+          {president.intitule && <p className="eyebrow mt-1 text-ink-soft">{president.intitule}</p>}
         </motion.div>
       )}
 
@@ -217,7 +224,7 @@ export function FriseBureau({
                 <span className="block font-display text-lg font-bold leading-tight text-bordeaux-700">
                   {m.prenom} {m.nom}
                 </span>
-                <span className="block text-sm text-ink-soft">{m.role}</span>
+                {m.intitule && <span className="block text-sm text-ink-soft">{m.intitule}</span>}
               </span>
             </motion.li>
           ))}
@@ -225,14 +232,14 @@ export function FriseBureau({
       )}
 
       {/* Les pôles, le long de la ligne */}
-      <div ref={ref} className="relative mt-16 pt-12">
+      <div ref={ref} className={poles.length > 0 ? "relative mt-16 pt-12" : "hidden"}>
         {/* La ligne : un rail clair, et le trait bordeaux qui se dessine par-dessus au défilement */}
         <div aria-hidden className="absolute bottom-0 left-7 top-0 w-[2px] -translate-x-1/2 bg-bordeaux-100 md:left-1/2">
           <motion.div className="h-full w-full origin-top bg-[image:var(--degrade-bouton)]" style={{ scaleY: reduit ? 1 : trace }} />
         </div>
         <ol className="relative space-y-20 pb-6 sm:space-y-24">
           {poles.map((p, i) => (
-            <Pole key={p.code} pole={p} index={i} />
+            <Pole key={p.id} pole={p} index={i} />
           ))}
         </ol>
       </div>

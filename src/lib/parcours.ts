@@ -29,7 +29,15 @@ export const SELECTION_CARTE = {
   presentation: true,
   conseil: true,
   formations: {
-    select: { intitule: true, parcours: true, etablissement: true, etablissementRef: { select: { nom: true, type: true } }, anneeDebut: true, anneeFin: true },
+    select: {
+      intitule: true,
+      parcours: true,
+      etablissement: true,
+      etablissementRef: { select: { nom: true, type: true } },
+      mention: { select: { famille: { select: { code: true } } } },
+      anneeDebut: true,
+      anneeFin: true,
+    },
     orderBy: [{ anneeDebut: { sort: "asc", nulls: "last" } }, { creeLe: "asc" }],
   },
   erasmus: {
@@ -80,6 +88,7 @@ export function versCarteParcours(p: PersonneCarte): CarteParcours {
     ],
     domaines: p.secteurs,
     etablissements: clesEtablissements(p.formations),
+    familles: [...new Set(p.formations.flatMap((f) => (f.mention ? [f.mention.famille.code] : [])))],
     erasmus: p.erasmus.map((e) => ({
       universite: e.universite.nom,
       pays: nomPays(e.universite.pays),

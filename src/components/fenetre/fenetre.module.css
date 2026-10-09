@@ -24,6 +24,25 @@
   display: flex;
   flex-direction: column;
 }
+/* Panneau qui glisse depuis la droite (listes de personnes des statistiques). */
+.laterale {
+  width: min(460px, 100vw);
+  height: 100dvh;
+  max-height: none;
+  margin: 0 0 0 auto;
+  border-radius: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .laterale[open] {
+    animation: laterale 0.35s var(--ease-premium);
+  }
+}
+@keyframes laterale {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
 .fenetre::backdrop {
   background: rgba(43, 13, 15, 0.62);
 }

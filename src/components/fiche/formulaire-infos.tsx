@@ -20,7 +20,7 @@ export function FormulaireInfos({
   pourAutrui: boolean;
   /** Le bureau modifie la fiche d'un membre : motif obligatoire (ADM-02). */
   demanderMotif?: boolean;
-  optionsDomaines: { valeur: string; libelle: string }[];
+  optionsDomaines: { valeur: string; libelle: string; groupe?: string }[];
   maxDomaines: number;
 }) {
   const [etat, action] = useActionState(modifierInfos, null);

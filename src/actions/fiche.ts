@@ -14,6 +14,8 @@ import { PREMIERE_PROMO } from "@/lib/format";
 import { champ, valider, valeursDe, type EtatFormulaire } from "@/lib/formulaire";
 import { MAX_DOMAINES_PAR_FICHE, chargerDomaines, trouverOuAjouterDomaine } from "@/lib/domaines";
 import { CODES_PAYS, trouverOuAjouterUniversite, trouverOuCreerEtablissement } from "@/lib/liste-etablissements";
+import { mentionReconnue } from "@/lib/liste-mentions";
+import { estBiLicence } from "@/lib/mentions";
 import { lireMotif, motifSuppression, noterModification } from "@/lib/notes";
 import { estPersonnel } from "@/lib/profils";
 import { estDuBureau } from "@/lib/roles";
@@ -36,6 +38,7 @@ function rafraichir(personneId: string) {
   revalidatePath("/admin", "layout");
   revalidatePath("/promotions");
   revalidatePath("/admin/domaines");
+  revalidatePath("/admin/mentions");
   revalidatePath("/erasmus");
   revalidatePath(`/espace/annuaire/${personneId}`);
 }
@@ -143,7 +146,7 @@ export async function modifierInfos(_etat: EtatFormulaire, formData: FormData): 
   return { succes: "Informations enregistrées." };
 }
 
-// ─── « Ma fiche » par étapes ───────────────────────────────────────────────────
+// ─── « Ma fiche » par étapes ───────────────────────────────────────────────────
 // Chaque étape n'enregistre que ses propres champs, puis passe à l'étape suivante.
 
 const schemasEtapes = {
@@ -211,6 +214,34 @@ export async function enregistrerEtapeFiche(_etat: EtatFormulaire, formData: For
   redirect(`/espace/ma-fiche?etape=${suivante}&enregistre=${etape}`);
 }
 
+// Boutons « Je suis encore en bi-licence », « Je n'ai pas encore fait de stage ni d'expérience » et
+// « Je n'ai pas fait d'Erasmus » : l'étape compte alors comme remplie dans le taux de remplissage.
+const schemaBascule = z.object({
+  personneId: z.string().min(1),
+  etape: champ.choix(["etudes", "experiences", "erasmus"]),
+  valeur: champ.case(),
+});
+
+export async function basculerEtapeSansElement(formData: FormData) {
+  const resultat = valider(schemaBascule, formData);
+  if (!resultat.ok) return;
+  const { personneId, etape, valeur } = resultat.donnees;
+  const { estProprietaire } = await contexteFiche(personneId);
+  // Comme le reste de l'assistant : réservé à sa propre fiche (le bureau passe par l'éditeur complet).
+  if (!estProprietaire) return;
+
+  if (etape === "etudes") {
+    const { statutActuel } = await prisma.personne.findUniqueOrThrow({ where: { id: personneId }, select: { statutActuel: true } });
+    // Décocher ne remet à zéro que le statut « en licence » (pas une autre situation choisie depuis).
+    const nouveau = valeur ? "EN_LICENCE" : statutActuel === "EN_LICENCE" ? null : statutActuel;
+    await prisma.personne.update({ where: { id: personneId }, data: { statutActuel: nouveau } });
+  } else {
+    await prisma.personne.update({ where: { id: personneId }, data: etape === "experiences" ? { sansExperience: valeur } : { sansErasmus: valeur } });
+  }
+  rafraichir(personneId);
+  redirect(`/espace/ma-fiche?etape=${etape}`);
+}
+
 // ─── Formations ────────────────────────────────────────────────────────────────
 
 const annee = () => champ.entierFacultatif(1990, new Date().getFullYear() + 6);
@@ -223,6 +254,10 @@ const schemaFormation = z.object({
   etablissement: champ.texte(160),
   anneeDebut: annee(),
   anneeFin: annee(),
+  // Mention choisie dans le menu (vide = « je ne la trouve pas ») et si la personne l'a choisie elle-même ;
+  // sinon la mention est recalculée ici à partir de l'intitulé (on ne se fie pas au navigateur).
+  mentionId: champ.texteFacultatif(40),
+  mentionManuelle: champ.case(),
 });
 
 export async function enregistrerFormation(_etat: EtatFormulaire, formData: FormData): Promise<EtatFormulaire> {
@@ -233,9 +268,31 @@ export async function enregistrerFormation(_etat: EtatFormulaire, formData: Form
   const motif = await lireMotif(contexte, formData);
   if ("erreur" in motif) return motif.erreur;
 
+  // La bi-licence est déjà affichée automatiquement : la saisir créerait un doublon.
+  if (estBiLicence(d.intitule, d.etablissement)) {
+    return {
+      erreur: "Certains champs sont à corriger.",
+      erreurs: {
+        intitule: "La bi-licence figure déjà automatiquement sur votre fiche. Si vous y êtes encore, utilisez le bouton « Je suis encore en bi-licence » de l’étape Études.",
+      },
+      valeurs: valeursDe(formData),
+    };
+  }
+
+  const { mentionId: mentionChoisie, mentionManuelle, ...champs } = d;
+  let mention: { mentionId: string | null; mentionAuto: boolean; mentionAControler: boolean };
+  if (mentionManuelle) {
+    const existe = mentionChoisie ? await prisma.mention.findUnique({ where: { id: mentionChoisie }, select: { id: true } }) : null;
+    if (mentionChoisie && !existe) return { erreur: "Cette mention n’existe plus : choisissez-en une autre.", valeurs: valeursDe(formData) };
+    // Choix d'un membre : vérifié ensuite par le bureau ; choix du bureau : définitif.
+    mention = { mentionId: existe?.id ?? null, mentionAuto: false, mentionAControler: ajout.aControler };
+  } else {
+    mention = { mentionId: await mentionReconnue(d.intitule, d.parcours), mentionAuto: true, mentionAControler: false };
+  }
+
   // L'établissement est relié à la liste commune (ajouté s'il n'y est pas encore).
   const etablissement = await trouverOuCreerEtablissement(d.etablissement, ajout);
-  const donnees = { ...d, etablissement: etablissement.nom, etablissementId: etablissement.id };
+  const donnees = { ...champs, ...mention, etablissement: etablissement.nom, etablissementId: etablissement.id };
 
   if (id) {
     await prisma.formation.update({ where: { id, personneId }, data: donnees });
@@ -325,6 +382,8 @@ export async function enregistrerExperience(_etat: EtatFormulaire, formData: For
     await prisma.experience.update({ where: { id, personneId }, data: donnees });
   } else {
     await prisma.experience.create({ data: { ...donnees, personneId } });
+    // La fiche ne peut pas dire « pas encore d'expérience » et en lister une.
+    await prisma.personne.update({ where: { id: personneId }, data: { sansExperience: false } });
   }
   await noterModification(contexte, `Expérience : ${d.organisation}`, motif.motif);
 
@@ -346,7 +405,7 @@ export async function supprimerExperience(formData: FormData) {
 
 // ─── Erasmus ───────────────────────────────────────────────────────────────────
 
-/** Valeur spéciale du menu « Université » : la personne ajoute une université absente de la liste. */
+/** Valeur spéciale du menu « Université » : la personne ajoute une université absente de la liste. */
 const NOUVELLE_UNIVERSITE = "__nouvelle";
 
 const schemaErasmus = z.object({
@@ -390,6 +449,7 @@ export async function enregistrerErasmus(_etat: EtatFormulaire, formData: FormDa
     await prisma.erasmus.update({ where: { id, personneId }, data: { ...d, universiteId: universite } });
   } else {
     await prisma.erasmus.create({ data: { ...d, universiteId: universite, personneId } });
+    await prisma.personne.update({ where: { id: personneId }, data: { sansErasmus: false } });
   }
   if (motif.motif) {
     const nom = (await prisma.etablissement.findUnique({ where: { id: universite }, select: { nom: true } }))?.nom ?? "";

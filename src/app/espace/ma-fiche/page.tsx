@@ -25,7 +25,7 @@ export default async function MaFiche({ searchParams }: PageProps<"/espace/ma-fi
         prisma.personne.findUnique({
           where: { id: user.personneId },
           include: {
-            formations: { orderBy: [{ anneeDebut: "desc" }, { creeLe: "desc" }] },
+            formations: { include: { mention: { select: { libelle: true } } }, orderBy: [{ anneeDebut: "desc" }, { creeLe: "desc" }] },
             experiences: { orderBy: [{ debut: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
             erasmus: { include: { universite: true }, orderBy: [{ annee: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
             notes: { orderBy: { creeLe: "desc" }, take: 20 },
@@ -55,7 +55,7 @@ export default async function MaFiche({ searchParams }: PageProps<"/espace/ma-fi
   }
 
   // Sans étape demandée : la première où il reste quelque chose à remplir.
-  const avancement = completude({ ...personne, nbFormations: personne.formations.length, nbExperiences: personne.experiences.length });
+  const avancement = completude({ ...personne, nbFormations: personne.formations.length, nbExperiences: personne.experiences.length, nbErasmus: personne.erasmus.length });
   const etape = estEtapeFiche(p.etape)
     ? p.etape
     : (ETAPES_FICHE.find((e) => avancement.etapesIncompletes.has(e.cle))?.cle ?? "identite");

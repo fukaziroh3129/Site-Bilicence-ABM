@@ -112,9 +112,14 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
     2021-2025, sources) ; carte du cursus en fenêtre `<dialog>` (`src/components/formation/`).
     À mettre à jour chaque année.
   - Actualités : case « à la une » (`Article.aLaUne`, grand format en tête) et archive paginée par année.
-  - Bureau : frise animée (`src/components/bureau/frise-bureau.tsx`) ; pôles listés dans `site.poles`
-    (`src/lib/site.ts`), `MembreBureau.pole` = code du pôle (vide = bureau restreint, le premier dans
-    l'ordre d'affichage est en tête de frise).
+  - Bureau : frise animée (`src/components/bureau/frise-bureau.tsx`). **Fonctions et pôles = étiquettes créées en
+    administration (8 octobre 2026, choix de Guillaume)** : table `Fonction` (`niveau` BUREAU | POLE, `ordre` = rang
+    dans le niveau, `icone` = clé de `src/lib/fonctions-bureau.ts`, `description` d'un pôle), reliée en plusieurs-à-plusieurs
+    à `MembreBureau.fonctions` (une personne peut porter plusieurs étiquettes ; `MembreBureau.role` n'est plus qu'une
+    précision libre). Plus de liste de pôles dans `site.ts`. Page publique `/bureau` : les personnes ayant une fonction
+    BUREAU en haut, ensemble (la mieux classée en tête de frise), puis chaque pôle en grand sur la frise. Administration
+    `/admin/bureau` : onglets Membres / Fonctions et pôles (`?vue=etiquettes`, création, flèches monter/descendre,
+    actions dans `src/actions/fonctions.ts`) ; un membre sans étiquette n'est affiché nulle part.
   - **Adhésion = création de compte (5 octobre 2026, choix de Guillaume)** : l'adhésion est gratuite et ne passe
     plus par HelloAsso. Page `/adhesion` (`/inscription` y redirige, `next.config.ts`) : choix du profil, formulaire
     et carte d'adhésion qui se remplit pendant la saisie (`src/components/adhesion/carte-adhesion.tsx`).
@@ -130,12 +135,12 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
     `https://www.helloasso.com` venant de son propre cadre.
 - Patchs des comptes membres (PATCHS.md, partie 2, appliqués le 3 octobre 2026) :
   - Menu de l'espace (`src/components/nav-deroulante.tsx`, données `navigationMembres` dans `site.ts`) :
-    menus déroulants « Réseau » (Annuaire, Que sont-ils devenus ?), « Opportunités » (Archive des stages,
+    menus déroulants « Réseau » (Annuaire, Que sont-ils devenus ?, Statistiques), « Opportunités » (Archive des stages,
     Offres, Erasmus) et « Mon profil » (Ma fiche, Mon compte) (réorganisé le 4 octobre 2026 ; l'onglet
     Événements a disparu le 5 octobre, les événements étant publics sur `/actualites`) ; plein écran sous 1024 px (rendu dans `<body>` via un portail, car `template.tsx`
     anime les pages). `restreint: true` = rubrique fermée aux comptes en attente (cadenas + fenêtre
     `DialogueRestreint`). Le même composant sert à l'administration (`navigationAdmin` : « Membres » =
-    Comptes, Pré-comptes, Fiches ; « Listes » = Domaines, Établissements) : props `racine`, `libelle`,
+    Comptes, Pré-comptes, Fiches ; « Listes » = Domaines, Établissements, Mentions) : props `racine`, `libelle`,
     `titre`. Une nouvelle rubrique = une entrée dans `site.ts` (+ son pictogramme dans `ICONES`).
   - Comptes EN_ATTENTE (MEM-09) : accueil dédié, « Ma fiche » et « Mon compte » seulement ; toute page
     `exigerMembreActif()` les renvoie vers `/espace?acces=restreint` (fenêtre d'explication). Leur fiche
@@ -184,6 +189,33 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   `/admin/reseaux` : réseau, adresse du post vérifiée sur le domaine du réseau, légende, visuel téléversé, publié).
   Aucun embed ni appel à Instagram/LinkedIn : pas de cookie tiers (les mentions légales disent qu'il n'y en a pas) ;
   ne jamais copier une image depuis un réseau (liens qui expirent) : sans visuel, cadre « Visuel à ajouter ».
+- **Statistiques du réseau, mentions de master, « Ma fiche » complète (8 octobre 2026, choix de Guillaume)** :
+  - « Ma fiche » : bascules `BasculeEtape` (`src/components/fiche/bascule-etape.tsx`, action `basculerEtapeSansElement`)
+    « Je suis encore en bi-licence » (= `statutActuel` EN_LICENCE), « pas encore de stage » (`Personne.sansExperience`),
+    « pas d'Erasmus » (`Personne.sansErasmus`) : l'étape compte comme remplie (`completude`, Erasmus compté depuis), une
+    fiche peut atteindre 100 %. Ajouter une expérience / un séjour remet le drapeau à faux. La bi-licence n'est JAMAIS une
+    formation en base (affichée automatiquement) : `estBiLicence()` (`src/lib/mentions.ts`) la refuse dans
+    `enregistrerFormation` et l'exclut des statistiques ; `npm run bilicence:nettoyer` retire celles déjà saisies.
+    Compteurs d'une fiche : `include: { _count: { select: COMPTES_FICHE } }` puis `completudeDe(fiche)`.
+  - Mentions : tables `FamilleMention` (« grand domaine d'études ») et `Mention` (variantes = autres écritures), lien
+    `Formation.mentionId` + `mentionAuto` (faux = choix d'une personne, jamais écrasé par la détection) + `mentionAControler`
+    (choix d'un membre à vérifier). Reconnaissance sans dépendance dans `src/lib/mentions.ts` (`detecterMention` : nettoyage,
+    correspondance exacte, expression, mots, approchée), aussi utilisée dans le navigateur (formulaire de formation : mention
+    proposée, modifiable par l'étudiant). Outils base : `src/lib/liste-mentions.ts` (`redetecterMentions`, `FORMATION_A_CLASSER`).
+    Administration `/admin/mentions` (`src/actions/mentions.ts`, `gestion-mentions.tsx`) : à classer, grands domaines et
+    mentions (ajouter, renommer, déplacer, fusionner, supprimer si vide), fenêtres « Ce qui va changer », test d'écriture.
+    Formations existantes / imports : `npm run mentions:detecter` (simulation, `--confirmer`, `--toutes`), appelé par les imports
+    et le seed. Couleurs des grands domaines : `couleurFamille(rang)` (gamme bordeaux, dans l'ordre).
+  - Domaines professionnels = domaine où l'on travaille OU que l'on vise (déduit de `statutActuel` : EN_POSTE / EN_ALTERNANCE =
+    y travaille). Liste élargie (24) rangée par `Domaine.groupe` (`GROUPES_DOMAINES`, `src/lib/domaines.ts`), choisi aussi dans
+    `/admin/domaines` ; `CasesMultiples` affiche les options par groupe.
+  - Page `/espace/statistiques` (menu Réseau, membres validés, `src/lib/statistiques-reseau.ts` + `src/components/statistiques-reseau/`) :
+    chiffres clés, établissements (double anneau type/établissement + liste), onglets Mentions (mosaïque ; liste groupée
+    sous 768 px) / Domaines professionnels / Par promotion ; filtre de promotion et onglet dans l'adresse ; un clic ouvre le
+    panneau latéral (`Fenetre` `laterale`) listant les personnes, filtrable, chaque ligne vers `/espace/annuaire/[id]`.
+  - Public (`StatsDevenir`) : le podium « Leurs domaines » est devenu « Ce qu'ils ont étudié » (top 3 des grands domaines
+    d'études) ; filtre du carrousel `?famille=<code>` (`CarteParcours.familles`).
+  - Maquette validée : `../maquettes/statistiques-reseau.html` (variante B).
 - Patchs de l'administration (PATCHS.md, partie 3, appliqués le 4 octobre 2026) :
   - Rôles (ADM-01) : voir « Authentification » ci-dessus. Page `/admin/comptes` : boutons selon
     `peutChangerRole` ; « Lien de mot de passe » envoie un lien de réinitialisation (le bureau ne voit

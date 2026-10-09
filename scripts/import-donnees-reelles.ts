@@ -30,6 +30,7 @@ import { join } from "node:path";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { compiler, sansAccent, type PersonneCompilee } from "./compilation-donnees";
 import { creerProprietaire, ecrireIdentifiants } from "./creer-proprietaire";
+import { detecterMentionsEnLot } from "./mentions-detecter";
 import { relierEtablissements } from "./relier-etablissements";
 import { codePays, PAYS_FORMATIONS, universiteDe } from "./universites-erasmus";
 
@@ -178,6 +179,9 @@ async function main() {
     // Formations reliées à la liste commune des établissements (à contrôler dans l'administration).
     const { crees } = await relierEtablissements(prisma);
     console.log(`Établissements de formation ajoutés : ${crees}`);
+    // Mentions de master reconnues à partir des intitulés (les autres sont « à classer » dans l'administration).
+    const { nonReconnus } = await detecterMentionsEnLot(prisma);
+    console.log(`Intitulés sans mention reconnue : ${nonReconnus.size}`);
     for (const e of await prisma.etablissement.findMany({ where: { pays: "FR" }, select: { id: true, nom: true } })) {
       const pays = PAYS_FORMATIONS[sansAccent(e.nom).replace(/’/g, "'")];
       if (pays) await prisma.etablissement.update({ where: { id: e.id }, data: { pays } });
