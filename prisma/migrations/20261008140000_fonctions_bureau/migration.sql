@@ -63,6 +63,7 @@ SELECT 'bureau_' || md5(m."role"), m."id" FROM "MembreBureau" m
 WHERE m."pole" IS NULL AND m."role" <> '';
 
 -- AlterTable : le rôle devient une précision facultative (déjà reprise dans la fonction du bureau), plus de colonne « pole ».
+-- D'abord autoriser la valeur vide, SINON le UPDATE suivant échoue dès qu'un membre n'a pas de pôle.
+ALTER TABLE "MembreBureau" ALTER COLUMN "role" DROP NOT NULL;
 UPDATE "MembreBureau" SET "role" = NULL WHERE "pole" IS NULL;
-ALTER TABLE "MembreBureau" DROP COLUMN "pole",
-ALTER COLUMN "role" DROP NOT NULL;
+ALTER TABLE "MembreBureau" DROP COLUMN "pole";
