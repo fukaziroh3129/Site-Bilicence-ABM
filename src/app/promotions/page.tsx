@@ -11,7 +11,7 @@ import { dictionnaireDomaines } from "@/lib/domaines";
 import { CLE_IEP, decrireEtablissement } from "@/lib/etablissements";
 import { SELECTION_CARTE, versCarteParcours } from "@/lib/parcours";
 import { statistiquesDevenir } from "@/lib/statistiques";
-import { FICHE_VISIBLE } from "@/lib/visibilite";
+import { FICHE_PUBLIQUE } from "@/lib/visibilite";
 
 export const metadata: Metadata = {
   title: "Que sont-ils devenus ?",
@@ -35,7 +35,7 @@ export default async function QueSontIlsDevenus({ searchParams }: PageProps<"/pr
   // couverts par cet accord : jamais de coordonnées, de retour d'expérience ni de contact de tuteur.
   const [personnes, domaines, stats] = await Promise.all([
     prisma.personne.findMany({
-      where: { consentementPublic: true, ...FICHE_VISIBLE },
+      where: FICHE_PUBLIQUE,
       select: SELECTION_CARTE,
     }),
     dictionnaireDomaines(),

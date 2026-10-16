@@ -33,10 +33,18 @@ async function contexteFiche(personneId: string) {
   };
 }
 
-function rafraichir(personneId: string) {
+/**
+ * À appeler après chaque modification. Quand la personne modifie sa propre fiche, la carte publique
+ * redevient « à contrôler » par le bureau (/admin/devenir) : le contrôle porte sur ce qui est affiché.
+ */
+async function rafraichir(personneId: string, estProprietaire: boolean) {
+  if (estProprietaire) {
+    await prisma.personne.updateMany({ where: { id: personneId, publicControleLe: { not: null } }, data: { publicControleLe: null } });
+  }
   revalidatePath("/espace", "layout");
   revalidatePath("/admin", "layout");
   revalidatePath("/promotions");
+  revalidatePath("/admin/devenir");
   revalidatePath("/admin/domaines");
   revalidatePath("/admin/mentions");
   revalidatePath("/erasmus");
@@ -142,7 +150,7 @@ export async function modifierInfos(_etat: EtatFormulaire, formData: FormData): 
   });
   await noterModification(contexte, "Informations générales", motif.motif);
 
-  rafraichir(personneId);
+  await rafraichir(personneId, contexte.estProprietaire);
   return { succes: "Informations enregistrées." };
 }
 
@@ -208,7 +216,7 @@ export async function enregistrerEtapeFiche(_etat: EtatFormulaire, formData: For
     await prisma.personne.update({ where: { id: personneId }, data: resultat.donnees });
   }
 
-  rafraichir(personneId);
+  await rafraichir(personneId, estProprietaire);
   const rang = ETAPES_FICHE.findIndex((e) => e.cle === etape);
   const suivante = ETAPES_FICHE[rang + 1]?.cle ?? etape;
   redirect(`/espace/ma-fiche?etape=${suivante}&enregistre=${etape}`);
@@ -238,7 +246,7 @@ export async function basculerEtapeSansElement(formData: FormData) {
   } else {
     await prisma.personne.update({ where: { id: personneId }, data: etape === "experiences" ? { sansExperience: valeur } : { sansErasmus: valeur } });
   }
-  rafraichir(personneId);
+  await rafraichir(personneId, false);
   redirect(`/espace/ma-fiche?etape=${etape}`);
 }
 
@@ -301,7 +309,7 @@ export async function enregistrerFormation(_etat: EtatFormulaire, formData: Form
   }
   await noterModification(contexte, `Formation : ${d.intitule}`, motif.motif);
 
-  rafraichir(personneId);
+  await rafraichir(personneId, estProprietaire);
   redirect(pageDeFiche(personneId, estProprietaire, "etudes"));
 }
 
@@ -313,7 +321,7 @@ export async function supprimerFormation(formData: FormData) {
   if (!motif.ok) return;
   const formation = await prisma.formation.delete({ where: { id, personneId } });
   await noterModification(contexte, `Formation supprimée : ${formation.intitule}`, motif.motif);
-  rafraichir(personneId);
+  await rafraichir(personneId, contexte.estProprietaire);
 }
 
 // ─── Stages et emplois ─────────────────────────────────────────────────────────
@@ -387,7 +395,7 @@ export async function enregistrerExperience(_etat: EtatFormulaire, formData: For
   }
   await noterModification(contexte, `Expérience : ${d.organisation}`, motif.motif);
 
-  rafraichir(personneId);
+  await rafraichir(personneId, estProprietaire);
   redirect(pageDeFiche(personneId, estProprietaire, "experiences"));
 }
 
@@ -400,7 +408,7 @@ export async function supprimerExperience(formData: FormData) {
   const experience = await prisma.experience.delete({ where: { id, personneId } });
   await supprimerRapport(experience.rapportFichier);
   await noterModification(contexte, `Expérience supprimée : ${experience.organisation}`, motif.motif);
-  rafraichir(personneId);
+  await rafraichir(personneId, contexte.estProprietaire);
 }
 
 // ─── Erasmus ───────────────────────────────────────────────────────────────────
@@ -456,7 +464,7 @@ export async function enregistrerErasmus(_etat: EtatFormulaire, formData: FormDa
     await noterModification(contexte, `Erasmus : ${nom}`, motif.motif);
   }
 
-  rafraichir(personneId);
+  await rafraichir(personneId, estProprietaire);
   redirect(pageDeFiche(personneId, estProprietaire, "erasmus"));
 }
 
@@ -468,7 +476,7 @@ export async function supprimerErasmus(formData: FormData) {
   if (!motif.ok) return;
   const sejour = await prisma.erasmus.delete({ where: { id, personneId }, include: { universite: { select: { nom: true } } } });
   await noterModification(contexte, `Erasmus supprimé : ${sejour.universite.nom}`, motif.motif);
-  rafraichir(personneId);
+  await rafraichir(personneId, contexte.estProprietaire);
 }
 
 // ─── Notes du bureau (ADM-02) ──────────────────────────────────────────────────

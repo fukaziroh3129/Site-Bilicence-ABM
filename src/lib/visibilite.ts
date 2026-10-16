@@ -8,3 +8,11 @@ import type { Prisma } from "@/generated/prisma/client";
 export const FICHE_VISIBLE = {
   OR: [{ compte: { is: null } }, { compte: { is: { statut: { in: ["ACTIF", "INVITE"] } } } }],
 } satisfies Prisma.PersonneWhereInput;
+
+// Cartes de la page publique « Que sont-ils devenus ? » : l'accord de la personne suffit pour
+// apparaître (le bureau contrôle ensuite, /admin/devenir), sauf si le bureau a retiré la carte.
+export const FICHE_PUBLIQUE = {
+  consentementPublic: true,
+  publicRetireLe: null,
+  ...FICHE_VISIBLE,
+} satisfies Prisma.PersonneWhereInput;

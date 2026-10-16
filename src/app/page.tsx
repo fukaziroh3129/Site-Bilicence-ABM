@@ -20,7 +20,7 @@ import { prisma } from "@/lib/db";
 import { normaliser } from "@/lib/format";
 import { site } from "@/lib/site";
 import { URL_SITE } from "@/lib/url";
-import { FICHE_VISIBLE } from "@/lib/visibilite";
+import { FICHE_PUBLIQUE, FICHE_VISIBLE } from "@/lib/visibilite";
 
 /** Chiffres réels du réseau (aucune valeur inventée). */
 async function chiffres() {
@@ -32,7 +32,7 @@ async function chiffres() {
     prisma.formation.findMany({ where: { personne: FICHE_VISIBLE }, select: { etablissement: true } }),
     // Établissements des seules personnes ayant accepté l'affichage public
     prisma.formation.findMany({
-      where: { personne: { consentementPublic: true, ...FICHE_VISIBLE } },
+      where: { personne: FICHE_PUBLIQUE },
       select: { etablissement: true },
     }),
   ]);

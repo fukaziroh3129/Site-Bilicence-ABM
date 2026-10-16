@@ -2,14 +2,33 @@
 
 import { CalendarDays, Newspaper } from "lucide-react";
 import { useActionState, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { enregistrerArticle } from "@/actions/admin";
+import { EditeurTexte } from "@/components/article/editeur-texte";
 import { ChampImage } from "@/components/champ-image";
 import { BoutonEnvoyer, CaseACocher, Champ, Liste, MessageFormulaire, ZoneTexte } from "@/components/formulaire";
+import { buttonClasses } from "@/components/ui";
 import type { Article, TypePublication } from "@/generated/prisma/client";
 import { LIBELLES_CATEGORIE_ARTICLE } from "@/lib/format";
 import { versChampDateHeure } from "@/lib/formulaire";
 
 const optionsCategorie = Object.entries(LIBELLES_CATEGORIE_ARTICLE).map(([valeur, libelle]) => ({ valeur, libelle }));
+
+const optionsCadrage = [
+  { valeur: "centre", libelle: "Centre" },
+  { valeur: "haut", libelle: "Haut (têtes, ciel…)" },
+  { valeur: "bas", libelle: "Bas" },
+];
+
+/** Enregistre sans quitter l'éditeur (le formulaire envoie « apres=continuer »). */
+function BoutonEnregistrerEtContinuer() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" name="apres" value="continuer" disabled={pending} className={`${buttonClasses("outline")} disabled:cursor-not-allowed disabled:opacity-40`}>
+      Enregistrer et continuer
+    </button>
+  );
+}
 
 const classePanneau = "rounded-abm-lg border border-bordeaux-700/15 bg-white p-5 shadow-abm-card sm:p-6";
 
@@ -82,16 +101,15 @@ export function FormulaireArticle({ article, typeInitial }: { article: Article |
             defaultValue={article?.chapo}
             etat={etat}
           />
-          <ZoneTexte
+          <EditeurTexte
             nom="contenu"
-            maxLength={30000}
+            maxLength={50000}
             libelle={evenement ? "Description" : "Texte"}
             aide={
               evenement
                 ? "Facultatif. Après l’événement, vous pouvez revenir ici raconter comment il s’est passé. Laissez une ligne vide entre deux paragraphes."
-                : "Laissez une ligne vide entre deux paragraphes."
+                : "Laissez une ligne vide entre deux paragraphes. La barre d’outils permet de mettre en forme, d’ajouter des images, des encadrés ou des chiffres clés."
             }
-            rows={evenement ? 8 : 18}
             requis={!evenement}
             defaultValue={article?.contenu}
             etat={etat}
@@ -106,6 +124,9 @@ export function FormulaireArticle({ article, typeInitial }: { article: Article |
             <Liste nom="categorie" libelle="Catégorie" requis options={optionsCategorie} defaultValue={article?.categorie} etat={etat} />
           )}
           <ChampImage libelle={evenement ? "Affiche ou photo" : "Image"} actuelle={article?.image} etat={etat} />
+          <Champ nom="imageLegende" libelle="Légende de l’image" maxLength={200} aide="Facultatif. Crédit photo, lieu, personnes présentes…" defaultValue={article?.imageLegende} etat={etat} />
+          <Liste nom="imageCadrage" libelle="Cadrage de l’image" options={optionsCadrage} defaultValue={article?.imageCadrage ?? "centre"} aide="Partie de la photo gardée quand elle est recadrée en paysage." etat={etat} />
+          <Champ nom="auteur" libelle="Rédigé par" maxLength={80} aide="Facultatif. Un prénom et un nom, ou « Le bureau »." defaultValue={article?.auteur} etat={etat} />
           <CaseACocher
             nom="aLaUne"
             libelle="À la une : grand format en tête de la page Actualités"
@@ -113,9 +134,17 @@ export function FormulaireArticle({ article, typeInitial }: { article: Article |
             defaultChecked={article?.aLaUne}
             etat={etat}
           />
+          <CaseACocher
+            nom="sommaire"
+            libelle="Afficher un sommaire en tête de l’article"
+            aide="Utile pour un texte long avec plusieurs titres de section."
+            defaultChecked={article?.sommaire}
+            etat={etat}
+          />
           <CaseACocher nom="publie" libelle="Publier sur le site (sinon : brouillon, visible seulement ici)" defaultChecked={article?.publie} etat={etat} />
-          <div className="border-t border-bordeaux-700/10 pt-4">
+          <div className="flex flex-wrap items-center gap-3 border-t border-bordeaux-700/10 pt-4">
             <BoutonEnvoyer>Enregistrer</BoutonEnvoyer>
+            <BoutonEnregistrerEtContinuer />
           </div>
         </aside>
       </div>

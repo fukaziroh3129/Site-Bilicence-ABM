@@ -127,6 +127,7 @@ export const navigationAdmin: EntreeMenu[] = [
       { href: "/admin/comptes", label: "Comptes", description: "Valider les inscriptions, gérer les rôles.", icone: "comptes" },
       { href: "/admin/invitations", label: "Pré-comptes", description: "Inviter des anciens dont la fiche existe déjà.", icone: "precomptes", admin: true },
       { href: "/admin/personnes", label: "Fiches", description: "Consulter et corriger les fiches des personnes.", icone: "fiche" },
+      { href: "/admin/devenir", label: "Que sont-ils devenus ?", description: "Contrôler les cartes que les anciens rendent publiques.", icone: "parcours" },
     ],
   },
   {

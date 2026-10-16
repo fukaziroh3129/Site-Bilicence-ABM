@@ -11,10 +11,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { adresseSite, envoyerEmail } from "@/lib/email";
 import { enregistrerImage, supprimerImage, verifierImage } from "@/lib/fichiers";
+import { imagesDuTexte } from "@/lib/article-texte";
 import { PREMIERE_PROMO, slugifier } from "@/lib/format";
 import { champ, valider, valeursDe, type EtatFormulaire } from "@/lib/formulaire";
 import { supprimerRapportsDe } from "@/lib/rapports";
 import { journaliser } from "@/lib/journal";
+import { autoriser, MESSAGE_LIMITE } from "@/lib/limite";
 import { estPersonnel } from "@/lib/profils";
 import { estDuBureau, peutChangerRole, peutGererCompte } from "@/lib/roles";
 import { exigerAdmin, exigerBureau } from "@/lib/session";
@@ -232,10 +234,17 @@ const schemaArticle = z.object({
   titre: champ.texte(160),
   categorie: champ.choix(["PORTRAIT_ANCIEN", "PORTRAIT_ETUDIANT", "VIE_LICENCE", "ASSOCIATION"]),
   chapo: champ.texteFacultatif(400),
-  contenu: champ.texteFacultatif(30000),
+  contenu: champ.texteFacultatif(50000),
   aLaUne: champ.case(),
   publie: champ.case(),
   retirerImage: champ.case(),
+  // Mise en page
+  auteur: champ.texteFacultatif(80),
+  imageLegende: champ.texteFacultatif(200),
+  imageCadrage: champ.choix(["haut", "centre", "bas"]),
+  sommaire: champ.case(),
+  /** « continuer » : on reste dans l'éditeur après l'enregistrement. */
+  apres: z.string().optional(),
   // Événement seulement
   debut: champ.dateHeureFacultative(),
   fin: champ.dateHeureFacultative(),
@@ -258,7 +267,7 @@ export async function enregistrerArticle(_etat: EtatFormulaire, formData: FormDa
   await exigerBureau();
   const resultat = valider(schemaArticle, formData);
   if (!resultat.ok) return resultat.etat;
-  const { id, retirerImage, publie, type, debut, fin, lieu, lien, ...d } = resultat.donnees;
+  const { id, retirerImage, publie, type, debut, fin, lieu, lien, apres, ...d } = resultat.donnees;
 
   // Un événement a forcément une date ; une actualité, forcément un texte.
   const erreurs: Record<string, string> = {};
@@ -297,17 +306,47 @@ export async function enregistrerArticle(_etat: EtatFormulaire, formData: FormDa
     slug: await slugUnique(d.titre, id),
   };
 
-  if (id) await prisma.article.update({ where: { id }, data: donnees });
-  else await prisma.article.create({ data: donnees });
+  const enregistre = id ? await prisma.article.update({ where: { id }, data: donnees }) : await prisma.article.create({ data: donnees });
+
+  // Les images retirées du texte ne servent plus : on les supprime du disque.
+  if (avant) await supprimerImagesDuTexte(imagesDuTexte(avant.contenu).filter((a) => !imagesDuTexte(enregistre.contenu).includes(a)), enregistre.id);
 
   rafraichirTout();
-  redirect("/admin/actualites");
+  redirect(apres === "continuer" ? `/admin/actualites/${enregistre.id}?enregistre=1` : "/admin/actualites");
+}
+
+/**
+ * Supprime des images insérées dans un texte, sauf si elles servent ailleurs (autre publication, image de
+ * couverture, vignette de réseau, photo du bureau) : une adresse recopiée par erreur ne doit rien casser.
+ */
+async function supprimerImagesDuTexte(adresses: string[], sauf: string) {
+  for (const adresse of adresses) {
+    const [dansUnTexte, commeCouverture, commeVignette, commePhoto] = await Promise.all([
+      prisma.article.count({ where: { id: { not: sauf }, contenu: { contains: adresse } } }),
+      prisma.article.count({ where: { image: adresse } }),
+      prisma.postSocial.count({ where: { image: adresse } }),
+      prisma.membreBureau.count({ where: { photo: adresse } }),
+    ]);
+    if (dansUnTexte + commeCouverture + commeVignette + commePhoto === 0) await supprimerImage(adresse);
+  }
+}
+
+/** Envoi d'une image depuis la barre d'outils de l'éditeur : renvoie son adresse, à insérer dans le texte. */
+export async function televerserImageTexte(formData: FormData): Promise<{ url?: string; erreur?: string }> {
+  const { user } = await exigerBureau();
+  if (!autoriser(`image-texte:${user.id}`, 40, 600)) return { erreur: MESSAGE_LIMITE };
+  const image = formData.get("image");
+  if (!(image instanceof File) || image.size === 0) return { erreur: "Choisissez une image." };
+  const erreur = await verifierImage(image);
+  if (erreur) return { erreur };
+  return { url: await enregistrerImage(image) };
 }
 
 export async function supprimerArticle(formData: FormData) {
   await exigerBureau();
   const article = await prisma.article.delete({ where: { id: String(formData.get("id")) } });
   await supprimerImage(article.image);
+  await supprimerImagesDuTexte(imagesDuTexte(article.contenu), article.id);
   rafraichirTout();
 }
 

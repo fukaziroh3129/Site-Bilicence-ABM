@@ -250,7 +250,9 @@ export async function AssistantFiche({
           <div>
             <p className="eyebrow text-bordeaux-500">Aperçu de votre carte</p>
             <p className="mb-4 mt-1 text-xs text-ink-soft">
-              {personne.consentementPublic
+              {personne.publicRetireLe
+                ? `Le bureau a retiré votre carte de la page publique${personne.publicRetireMotif ? ` (motif : ${personne.publicRetireMotif})` : ""}. Modifiez votre fiche si besoin et contactez le bureau pour la faire rétablir.`
+                : personne.consentementPublic
                 ? "Telle qu’elle apparaît sur la page publique « Que sont-ils devenus ? ». Mise à jour à chaque enregistrement."
                 : "Elle n’apparaîtra sur la page publique que si vous l’acceptez (étape « Votre carte »). Mise à jour à chaque enregistrement."}
             </p>

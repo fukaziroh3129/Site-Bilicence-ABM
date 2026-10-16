@@ -47,13 +47,13 @@ model User {
   updatedAt     DateTime @updatedAt
 
   // Champs ABM, saisis à l'inscription pour aider le bureau à identifier la personne
-  prenom      String @default("")
-  nom         String @default("")
+  prenom      String       @default("")
+  nom         String       @default("")
   promoEntree Int?
   profil      ProfilCompte @default(ALUMNI)
   fonction    String? // personnel seulement : code de FONCTIONS_PERSONNEL (src/lib/profils.ts)
 
-  statut    StatutCompte @default(EN_ATTENTE)
+  statut     StatutCompte @default(EN_ATTENTE)
   role       RoleCompte   @default(MEMBRE)
   // Fiche alumni rattachée par le bureau lors de la validation
   personneId String?      @unique
@@ -187,6 +187,14 @@ model Personne {
   consentementPublic   Boolean   @default(false)
   consentementPublicLe DateTime?
 
+  // Contrôle a posteriori par le bureau (/admin/devenir) : la carte est publiée dès l'accord de la
+  // personne, puis le bureau la valide ou la retire. publicControleLe est remis à vide quand la
+  // personne modifie sa fiche (elle revient « à contrôler »). Une carte retirée n'apparaît plus,
+  // même avec l'accord, jusqu'à ce que le bureau la rétablisse.
+  publicControleLe  DateTime?
+  publicRetireLe    DateTime?
+  publicRetireMotif String?
+
   creeLe    DateTime @default(now())
   modifieLe DateTime @updatedAt
 
@@ -218,27 +226,27 @@ model NoteModification {
 
 // Formations suivies après (ou en parallèle de) la bi-licence : masters, écoles…
 model Formation {
-  id               String         @id @default(cuid())
-  personneId       String
-  personne         Personne       @relation(fields: [personneId], references: [id], onDelete: Cascade)
-  intitule         String // ex. « Master Relations internationales »
-  parcours         String?
+  id                String         @id @default(cuid())
+  personneId        String
+  personne          Personne       @relation(fields: [personneId], references: [id], onDelete: Cascade)
+  intitule          String // ex. « Master Relations internationales »
+  parcours          String?
   // Nom de l'établissement, recopié depuis la liste commune (tenu à jour si le bureau le renomme ou
   // le fusionne) ; etablissementId est vide seulement pour les saisies antérieures à la liste.
-  etablissement    String
-  etablissementId  String?
-  etablissementRef Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
-  anneeDebut       Int?
-  anneeFin         Int?
+  etablissement     String
+  etablissementId   String?
+  etablissementRef  Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  anneeDebut        Int?
+  anneeFin          Int?
   // Mention de master, reconnue à partir de l'intitulé (src/lib/mentions.ts) ou choisie à la main.
   // mentionAuto : la détection peut la recalculer ; faux = choix d'une personne, jamais écrasé.
   // mentionAControler : choisie par un membre, à vérifier par le bureau (/admin/mentions).
   mentionId         String?
-  mention           Mention? @relation(fields: [mentionId], references: [id], onDelete: SetNull)
-  mentionAuto       Boolean  @default(true)
-  mentionAControler Boolean  @default(false)
-  creeLe           DateTime       @default(now())
-  modifieLe        DateTime       @updatedAt
+  mention           Mention?       @relation(fields: [mentionId], references: [id], onDelete: SetNull)
+  mentionAuto       Boolean        @default(true)
+  mentionAControler Boolean        @default(false)
+  creeLe            DateTime       @default(now())
+  modifieLe         DateTime       @updatedAt
 
   @@index([personneId])
   @@index([etablissementId])
@@ -456,24 +464,29 @@ enum CategorieArticle {
 }
 
 model Article {
-  id        String           @id @default(cuid())
-  type      TypePublication  @default(ACTUALITE)
-  titre     String
-  slug      String           @unique // partie de l'adresse : /actualites/<slug>
-  categorie CategorieArticle
-  chapo     String? // court résumé sous le titre
-  contenu   String? // obligatoire pour une actualité, facultatif pour un événement
-  image     String? // chemin d'un fichier téléversé
-  aLaUne    Boolean          @default(false) // grand format en tête de la page Actualités
-  publie    Boolean          @default(false)
-  publieLe  DateTime?
+  id           String           @id @default(cuid())
+  type         TypePublication  @default(ACTUALITE)
+  titre        String
+  slug         String           @unique // partie de l'adresse : /actualites/<slug>
+  categorie    CategorieArticle
+  chapo        String? // court résumé sous le titre
+  contenu      String? // obligatoire pour une actualité, facultatif pour un événement
+  image        String? // chemin d'un fichier téléversé
+  aLaUne       Boolean          @default(false) // grand format en tête de la page Actualités
+  publie       Boolean          @default(false)
+  publieLe     DateTime?
+  // Mise en page de l'article (voir src/lib/article-texte.ts)
+  auteur       String? // « Rédigé par … » (nom libre : une personne, « Le bureau »…)
+  imageLegende String? // légende de l'image de couverture
+  imageCadrage String           @default("centre") // partie de l'image gardée dans le cadre : haut | centre | bas
+  sommaire     Boolean          @default(false) // sommaire cliquable en tête de l'article
   // Événement seulement
-  debut     DateTime?
-  fin       DateTime?
-  lieu      String?
-  lien      String? // publication Instagram, billetterie…
-  creeLe    DateTime         @default(now())
-  modifieLe DateTime         @updatedAt
+  debut        DateTime?
+  fin          DateTime?
+  lieu         String?
+  lien         String? // publication Instagram, billetterie…
+  creeLe       DateTime         @default(now())
+  modifieLe    DateTime         @updatedAt
 
   @@index([publie, publieLe])
   @@index([type, debut])

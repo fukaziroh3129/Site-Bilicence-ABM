@@ -99,6 +99,14 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   (`src/components/parcours/`), données limitées à ce que couvre le consentement public
   (jamais coordonnées, rapports de stage, contacts de tuteurs). Après un changement de schéma
   Prisma, redémarrer `npm run dev` (le client Prisma est gardé en mémoire).
+- **Contrôle a posteriori des cartes publiques (16 octobre 2026, choix de Guillaume)** : une carte apparaît sur
+  `/promotions` dès que la personne coche l'accord (`consentementPublic`) ; le bureau contrôle ensuite dans
+  `/admin/devenir` (`src/actions/devenir.ts`, onglets À contrôler / Publiées / Retirées, `?vue=`). Champs
+  `Personne.publicControleLe` (vide = jamais relue ; remis à vide par `rafraichir()` de `src/actions/fiche.ts` dès que
+  LA PERSONNE modifie sa fiche), `publicRetireLe` + `publicRetireMotif` (retrait par le bureau : la carte disparaît même
+  avec l'accord, jusqu'à « Rétablir »). Le motif est transmis par une `NoteModification` (si la personne a un compte) et
+  affiché sous l'aperçu de « Ma fiche ». Toute requête qui liste les cartes publiques utilise `FICHE_PUBLIQUE`
+  (`src/lib/visibilite.ts`), jamais `consentementPublic: true` seul. Tuile « cartes publiques à relire » sur le tableau de bord.
 - Patchs de la partie publique (PATCHS.md, partie 1, appliqués le 3 octobre 2026) :
   - Statistiques « Que deviennent-ils ? » (`src/lib/statistiques.ts` + `src/components/statistiques/`) :
     top 3 domaines et top 3 établissements, en proportions, calculés sur TOUTES les fiches (jamais de
@@ -181,6 +189,21 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   d'agenda : `src/lib/calendrier.ts` (`estEvenement`, type `Evenement` = article daté).
   `/espace/evenements` redirige vers `/actualites?type=evenements` ; l'accueil de l'espace garde le
   panneau « Prochains événements ».
+- **Mise en forme des articles (16 octobre 2026, demande de Guillaume ; plan dans `PLAN-EDITEUR-ARTICLES.md`)** : `Article.contenu`
+  reste du TEXTE avec des balises légères (Markdown étendu), jamais du HTML. Lecteur `src/lib/article-texte.ts`
+  (`lireArticle` → arbre de blocs, sommaire, temps de lecture ; sans dépendance serveur, aussi utilisé dans le navigateur) ;
+  rendu `src/components/article/corps-article.tsx` (éléments React, charte ABM : `CorpsArticle`, `SommaireArticle`), le MÊME
+  pour la page publique et l'onglet « Aperçu » de l'éditeur ; éditeur `src/components/article/editeur-texte.tsx` (barre d'outils
+  qui écrit les balises, insertion d'images par `televerserImageTexte`, modèles, aide-mémoire). Syntaxe : `## Titre`, `**gras**`,
+  `*italique*`, `++souligné++`, `~~barré~~`, `==surligné==`, `[texte]{.bordeaux .grand .script}` (couleurs, fonds, tailles, polices
+  = listes FERMÉES en tête du lecteur, associées à des classes dans le rendu), `[texte](adresse){.bouton}`, listes (`- [ ]` = cases),
+  `> citation` + `> — auteur`, `---`, `![légende](/fichiers/…){.petite .droite}`, conteneurs `:::info|important|conseil|rose|beige|bordeaux|
+  centre|chiffres|colonnes|galerie` … `:::` (`+++` coupe les colonnes). Un ancien texte simple s'affiche comme avant. Sécurité : liens
+  limités à http(s)/mailto/tel/pages du site (`adresseSure`), images limitées aux fichiers téléversés (`/fichiers/<uuid>.jpg|png|webp`),
+  profondeur d'imbrication bornée. Ajouter une couleur/taille/police = la liste du lecteur + `CLASSES_STYLE` du rendu + la barre d'outils.
+  Champs ajoutés à `Article` : `auteur`, `imageLegende`, `imageCadrage` (haut|centre|bas), `sommaire`. Les images retirées du texte (ou d'un
+  article supprimé) sont effacées du disque sauf si elles servent ailleurs (`supprimerImagesDuTexte`) ; une image envoyée puis jamais
+  enregistrée reste sur le disque (orpheline). Tests du lecteur : `npx tsx scripts/tester-article-texte.ts`.
 - **Réseaux sociaux sur l'accueil (5 octobre 2026, choix de Guillaume)** : adresses de l'association dans
   `site.liens.instagram` / `site.liens.linkedin` (`src/lib/site.ts`). Icônes de marque en SVG inline
   (`src/components/icones-sociales.tsx` : `LiensReseaux`, `reseauxDeLAssociation`), affichées dans le bandeau, la

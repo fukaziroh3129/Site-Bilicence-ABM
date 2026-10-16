@@ -38,15 +38,23 @@ export default async function AdminPersonne({ params }: PageProps<"/admin/person
         ? `Compte : ${personne.compte.email} (${LIBELLES_STATUT_COMPTE[personne.compte.statut].toLowerCase()}, ${LIBELLES_ROLE[personne.compte.role as Role].toLowerCase()})`
         : "Pas de compte : fiche gérée par le bureau."}
       {personne.consentementPublicLe && ` · Accord pour l’affichage public donné le ${dateCourte(personne.consentementPublicLe)}`}
+      {personne.publicRetireLe && ` · Carte publique retirée par le bureau le ${dateCourte(personne.publicRetireLe)}`}
     </>
   );
 
   const barre = (
     <div className="-mt-4 flex flex-wrap items-center justify-between gap-3">
       <FilAriane retour={{ href: "/admin/personnes", libelle: "Fiches" }} ici={`${personne.prenom} ${personne.nom}`} />
-      <Link href={`/espace/annuaire/${personne.id}`} className={`inline-flex items-center gap-1 text-sm ${classeLien}`}>
-        <Eye size={16} aria-hidden /> Voir dans l’annuaire
-      </Link>
+      <div className="flex flex-wrap items-center gap-4">
+        {personne.consentementPublic && (
+          <Link href={`/admin/devenir?vue=${personne.publicRetireLe ? "retirees" : personne.publicControleLe ? "publiees" : "a-controler"}`} className={`inline-flex items-center gap-1 text-sm ${classeLien}`}>
+            <Eye size={16} aria-hidden /> Contrôler sa carte publique
+          </Link>
+        )}
+        <Link href={`/espace/annuaire/${personne.id}`} className={`inline-flex items-center gap-1 text-sm ${classeLien}`}>
+          <Eye size={16} aria-hidden /> Voir dans l’annuaire
+        </Link>
+      </div>
     </div>
   );
 

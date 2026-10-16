@@ -8,6 +8,7 @@ import { maintenance } from "@/lib/maintenance";
 import { estPersonnel, libelleFonction } from "@/lib/profils";
 import { LIBELLES_ROLE, estAdministrateur, type Role } from "@/lib/roles";
 import { exigerBureau } from "@/lib/session";
+import { FICHE_PUBLIQUE } from "@/lib/visibilite";
 
 export const metadata = { title: "Tableau de bord" };
 
@@ -28,6 +29,7 @@ export default async function TableauDeBord() {
     domainesAControler,
     etablissementsAControler,
     formationsAClasser,
+    cartesAControler,
     membresActifs,
     fiches,
     fichesPubliques,
@@ -65,6 +67,7 @@ export default async function TableauDeBord() {
       select: { id: true, intitule: true, creeLe: true, mentionAControler: true, personne: { select: { prenom: true, nom: true } } },
       orderBy: { creeLe: "desc" },
     }),
+    prisma.personne.count({ where: { ...FICHE_PUBLIQUE, publicControleLe: null } }),
     prisma.user.count({ where: { statut: "ACTIF" } }),
     prisma.personne.count(),
     prisma.personne.count({ where: { consentementPublic: true } }),
@@ -76,7 +79,7 @@ export default async function TableauDeBord() {
 
   const universitesErasmus = etablissementsAControler.filter((e) => e._count.sejours > 0);
   const autresEtablissements = etablissementsAControler.filter((e) => e._count.sejours === 0);
-  const aControler = domainesAControler.length + etablissementsAControler.length + formationsAClasser.length;
+  const aControler = domainesAControler.length + etablissementsAControler.length + formationsAClasser.length + cartesAControler;
   const enAttente = nbComptes + nbOffres;
 
   // Fil des derniers ajouts des membres, du plus récent au plus ancien.
@@ -195,7 +198,7 @@ export default async function TableauDeBord() {
           titre="À contrôler"
           compte={aControler}
           compteAccent
-          action={<span className="text-sm text-ink-soft">Ajouts des membres, déjà utilisables</span>}
+          action={<span className="text-sm text-ink-soft">Ajouts des membres, déjà utilisables ou publiés</span>}
         >
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {[
@@ -203,6 +206,7 @@ export default async function TableauDeBord() {
               { n: autresEtablissements.length, libelle: accorde(autresEtablissements.length, "établissement de formation", "établissements de formation"), href: "/admin/etablissements" },
               { n: domainesAControler.length, libelle: accorde(domainesAControler.length, "domaine", "domaines"), href: "/admin/domaines" },
               { n: formationsAClasser.length, libelle: accorde(formationsAClasser.length, "formation à classer (mention)", "formations à classer (mention)"), href: "/admin/mentions" },
+              { n: cartesAControler, libelle: accorde(cartesAControler, "carte publique à relire", "cartes publiques à relire"), href: "/admin/devenir" },
             ].map((t) => (
               <li key={t.libelle}>
                 <Link

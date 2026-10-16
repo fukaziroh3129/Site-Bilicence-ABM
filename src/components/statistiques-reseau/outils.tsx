@@ -3,6 +3,7 @@
 // Outils communs aux graphiques de la page « Statistiques » : comptages, infobulle, types partagés.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { FormationStat, PersonneStat, TypeStat } from "@/lib/statistiques-reseau";
 
 export type { DonneesStatistiques, FormationStat, PersonneStat, TypeStat } from "@/lib/statistiques-reseau";
@@ -75,16 +76,21 @@ export function useBulle() {
     [],
   );
 
-  const element = bulle ? (
-    <div
-      ref={ref}
-      aria-hidden
-      className="pointer-events-none fixed z-[90] max-w-[280px] rounded-abm-sm bg-bordeaux-900 px-3 py-2 text-[13px] leading-snug text-white shadow-abm-raised"
-      style={position ?? { left: -9999, top: -9999 }}
-    >
-      {bulle.contenu}
-    </div>
-  ) : null;
+  // Rendue dans <body> (portail) : l'animation d'entrée de page (`template.tsx`) garde un `transform` sur
+  // son conteneur, qui deviendrait sinon le repère du `fixed` et décalerait la bulle du curseur.
+  const element = bulle
+    ? createPortal(
+        <div
+          ref={ref}
+          aria-hidden
+          className="pointer-events-none fixed z-[90] max-w-[280px] rounded-abm-sm bg-bordeaux-900 px-3 py-2 text-[13px] leading-snug text-white shadow-abm-raised"
+          style={position ?? { left: -9999, top: -9999 }}
+        >
+          {bulle.contenu}
+        </div>,
+        document.body,
+      )
+    : null;
 
   return { bulle: element, survol: proprietes, cacher: () => setBulle(null) };
 }
