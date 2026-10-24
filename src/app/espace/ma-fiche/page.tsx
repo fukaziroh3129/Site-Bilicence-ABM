@@ -26,6 +26,7 @@ export default async function MaFiche({ searchParams }: PageProps<"/espace/ma-fi
           where: { id: user.personneId },
           include: {
             formations: { include: { mention: { select: { libelle: true } } }, orderBy: [{ anneeDebut: "desc" }, { creeLe: "desc" }] },
+            formationsComplementaires: { orderBy: [{ anneeDebut: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
             experiences: { orderBy: [{ debut: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
             erasmus: { include: { universite: true }, orderBy: [{ annee: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
             notes: { orderBy: { creeLe: "desc" }, take: 20 },

@@ -8,6 +8,7 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { exigerDroitSurFiche, pageDeFiche } from "@/lib/acces";
 import { ETAPES_FICHE } from "@/lib/completude";
+import { TYPES_AVEC_ETABLISSEMENT, TYPES_COMPLEMENTAIRES, detecterComplementaire } from "@/lib/complementaires";
 import { prisma } from "@/lib/db";
 import { enregistrerPdf, supprimerRapport, verifierPdf } from "@/lib/fichiers";
 import { PREMIERE_PROMO } from "@/lib/format";
@@ -48,6 +49,7 @@ async function rafraichir(personneId: string, estProprietaire: boolean) {
   revalidatePath("/admin/domaines");
   revalidatePath("/admin/mentions");
   revalidatePath("/erasmus");
+  revalidatePath("/admin/formations-complementaires");
   revalidatePath(`/espace/annuaire/${personneId}`);
 }
 
@@ -300,7 +302,12 @@ export async function enregistrerFormation(_etat: EtatFormulaire, formData: Form
 
   // L'établissement est relié à la liste commune (ajouté s'il n'y est pas encore).
   const etablissement = await trouverOuCreerEtablissement(d.etablissement, ajout);
-  const donnees = { ...champs, ...mention, etablissement: etablissement.nom, etablissementId: etablissement.id };
+  // Un DU, une certification… saisi ici est proposé au bureau pour être rangé (/admin/formations-complementaires),
+  // sauf si le bureau a déjà confirmé que c'est un master.
+  const { promoEntree } = await prisma.personne.findUniqueOrThrow({ where: { id: personneId }, select: { promoEntree: true } });
+  const ecartee = id ? (await prisma.formation.findUnique({ where: { id, personneId }, select: { complementaireEcarte: true } }))?.complementaireEcarte : false;
+  const complementaireSuggere = ecartee ? null : (detecterComplementaire(d, promoEntree)?.type ?? null);
+  const donnees = { ...champs, ...mention, etablissement: etablissement.nom, etablissementId: etablissement.id, complementaireSuggere };
 
   if (id) {
     await prisma.formation.update({ where: { id, personneId }, data: donnees });
@@ -321,6 +328,66 @@ export async function supprimerFormation(formData: FormData) {
   if (!motif.ok) return;
   const formation = await prisma.formation.delete({ where: { id, personneId } });
   await noterModification(contexte, `Formation supprimée : ${formation.intitule}`, motif.motif);
+  await rafraichir(personneId, contexte.estProprietaire);
+}
+
+// ─── Formations complémentaires (DU, licence en parallèle, certification, MOOC, autre) ──
+
+const schemaComplementaire = z.object({
+  personneId: z.string().min(1),
+  id: z.string().optional(),
+  type: champ.choix(TYPES_COMPLEMENTAIRES),
+  titre: champ.texte(160),
+  organisme: champ.texte(160),
+  anneeDebut: annee(),
+  anneeFin: annee(),
+  resultat: champ.texteFacultatif(40),
+  avis: champ.texteFacultatif(600),
+});
+
+export async function enregistrerFormationComplementaire(_etat: EtatFormulaire, formData: FormData): Promise<EtatFormulaire> {
+  const resultat = valider(schemaComplementaire, formData);
+  if (!resultat.ok) return resultat.etat;
+  const { personneId, id, ...d } = resultat.donnees;
+  const { estProprietaire, contexte, ajout } = await contexteFiche(personneId);
+  const motif = await lireMotif(contexte, formData);
+  if ("erreur" in motif) return motif.erreur;
+
+  // Une certification ou un MOOC n'a qu'une année ; le score ne concerne que les certifications.
+  const uneAnnee = d.type === "CERTIFICATION" || d.type === "MOOC";
+  if (!uneAnnee && d.anneeDebut && d.anneeFin && d.anneeFin < d.anneeDebut) {
+    return { erreur: "Certains champs sont à corriger.", erreurs: { anneeFin: "La fin doit être après le début." }, valeurs: valeursDe(formData) };
+  }
+
+  // DU et licence : université reliée à la liste commune, comme les masters ; sinon organisme libre.
+  const etablissement = TYPES_AVEC_ETABLISSEMENT.includes(d.type) ? await trouverOuCreerEtablissement(d.organisme, ajout) : null;
+  const donnees = {
+    ...d,
+    organisme: etablissement?.nom ?? d.organisme,
+    etablissementId: etablissement?.id ?? null,
+    anneeFin: uneAnnee ? null : d.anneeFin,
+    resultat: d.type === "CERTIFICATION" ? d.resultat : null,
+  };
+
+  if (id) {
+    await prisma.formationComplementaire.update({ where: { id, personneId }, data: donnees });
+  } else {
+    await prisma.formationComplementaire.create({ data: { ...donnees, personneId } });
+  }
+  await noterModification(contexte, `Formation complémentaire : ${d.titre}`, motif.motif);
+
+  await rafraichir(personneId, estProprietaire);
+  redirect(pageDeFiche(personneId, estProprietaire, "etudes"));
+}
+
+export async function supprimerFormationComplementaire(formData: FormData) {
+  const id = String(formData.get("id"));
+  const personneId = String(formData.get("personneId"));
+  const { contexte } = await contexteFiche(personneId);
+  const motif = await motifSuppression(contexte, formData);
+  if (!motif.ok) return;
+  const formation = await prisma.formationComplementaire.delete({ where: { id, personneId } });
+  await noterModification(contexte, `Formation complémentaire supprimée : ${formation.titre}`, motif.motif);
   await rafraichir(personneId, contexte.estProprietaire);
 }
 

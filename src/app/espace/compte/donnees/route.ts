@@ -30,6 +30,7 @@ export async function GET() {
       personne: {
         include: {
           formations: { omit: { personneId: true } },
+          formationsComplementaires: { omit: { personneId: true } },
           experiences: { omit: { personneId: true } },
           erasmus: { omit: { personneId: true }, include: { universite: { select: { nom: true, ville: true, pays: true } } } },
         },

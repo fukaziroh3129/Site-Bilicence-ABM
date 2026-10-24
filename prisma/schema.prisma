@@ -204,6 +204,8 @@ model Personne {
   erasmus     Erasmus[]
   notes       NoteModification[]
 
+  formationsComplementaires FormationComplementaire[]
+
   @@index([promoEntree])
 }
 
@@ -226,31 +228,69 @@ model NoteModification {
 
 // Formations suivies après (ou en parallèle de) la bi-licence : masters, écoles…
 model Formation {
-  id                String         @id @default(cuid())
-  personneId        String
-  personne          Personne       @relation(fields: [personneId], references: [id], onDelete: Cascade)
-  intitule          String // ex. « Master Relations internationales »
-  parcours          String?
+  id                    String              @id @default(cuid())
+  personneId            String
+  personne              Personne            @relation(fields: [personneId], references: [id], onDelete: Cascade)
+  intitule              String // ex. « Master Relations internationales »
+  parcours              String?
   // Nom de l'établissement, recopié depuis la liste commune (tenu à jour si le bureau le renomme ou
   // le fusionne) ; etablissementId est vide seulement pour les saisies antérieures à la liste.
-  etablissement     String
-  etablissementId   String?
-  etablissementRef  Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
-  anneeDebut        Int?
-  anneeFin          Int?
+  etablissement         String
+  etablissementId       String?
+  etablissementRef      Etablissement?      @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  anneeDebut            Int?
+  anneeFin              Int?
   // Mention de master, reconnue à partir de l'intitulé (src/lib/mentions.ts) ou choisie à la main.
   // mentionAuto : la détection peut la recalculer ; faux = choix d'une personne, jamais écrasé.
   // mentionAControler : choisie par un membre, à vérifier par le bureau (/admin/mentions).
-  mentionId         String?
-  mention           Mention?       @relation(fields: [mentionId], references: [id], onDelete: SetNull)
-  mentionAuto       Boolean        @default(true)
-  mentionAControler Boolean        @default(false)
-  creeLe            DateTime       @default(now())
-  modifieLe         DateTime       @updatedAt
+  mentionId             String?
+  mention               Mention?            @relation(fields: [mentionId], references: [id], onDelete: SetNull)
+  mentionAuto           Boolean             @default(true)
+  mentionAControler     Boolean             @default(false)
+  // Formation qui ressemble à un DU, une certification, un MOOC… saisi comme un master
+  // (src/lib/complementaires.ts) : type proposé au bureau, qui la range ou la garde (/admin/formations-complementaires).
+  // complementaireEcarte : le bureau a confirmé que c'est bien un master ; elle n'est plus proposée.
+  complementaireSuggere TypeComplementaire?
+  complementaireEcarte  Boolean             @default(false)
+  creeLe                DateTime            @default(now())
+  modifieLe             DateTime            @updatedAt
 
   @@index([personneId])
   @@index([etablissementId])
   @@index([mentionId])
+}
+
+enum TypeComplementaire {
+  DU // diplôme universitaire, DIU, certificat d'université
+  LICENCE // licence suivie en parallèle (double cursus)
+  CERTIFICATION // TOEIC, Voltaire, PIX…
+  MOOC
+  AUTRE
+}
+
+// Formations suivies à côté des études : DU, licence en parallèle, certification, MOOC, autre.
+// Séparées des masters (table Formation) : elles n'entrent ni dans les mentions ni dans les statistiques
+// de poursuite d'études. Visibles des membres connectés (annuaire, /espace/formations-complementaires),
+// jamais sur la page publique. Les titres identiques (accents et majuscules ignorés) sont regroupés.
+model FormationComplementaire {
+  id               String             @id @default(cuid())
+  personneId       String
+  personne         Personne           @relation(fields: [personneId], references: [id], onDelete: Cascade)
+  type             TypeComplementaire
+  titre            String // ex. « TOEIC Listening & Reading »
+  // Université (DU, licence : reliée à la liste commune, comme Formation) ou organisme / plateforme.
+  organisme        String
+  etablissementId  String?
+  etablissementRef Etablissement?     @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  anneeDebut       Int? // année d'obtention pour une certification, année du cours pour un MOOC
+  anneeFin         Int?
+  resultat         String? // score ou niveau d'une certification, ex. « 945 », « C1 »
+  avis             String? // ce que c'est, ce que la personne en a pensé
+  creeLe           DateTime           @default(now())
+  modifieLe        DateTime           @updatedAt
+
+  @@index([personneId])
+  @@index([etablissementId])
 }
 
 // Grands domaines d'études (« Économie », « Science politique & relations internationales »…) : les
@@ -381,8 +421,9 @@ model Etablissement {
   creeLe      DateTime          @default(now())
   modifieLe   DateTime          @updatedAt
 
-  sejours    Erasmus[]
-  formations Formation[]
+  sejours                   Erasmus[]
+  formations                Formation[]
+  formationsComplementaires FormationComplementaire[]
 
   @@index([pays])
   @@index([aControler])

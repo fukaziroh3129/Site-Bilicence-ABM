@@ -1,12 +1,13 @@
-// Listes modifiables d'une fiche (formations, Erasmus, expériences) : utilisées par l'éditeur
+// Listes modifiables d'une fiche (formations, formations complémentaires, Erasmus, expériences) : utilisées par l'éditeur
 // complet (administration) et par l'assistant « Ma fiche ».
 
 import { GraduationCap, Pencil } from "lucide-react";
 import Link from "next/link";
-import { supprimerErasmus, supprimerExperience, supprimerFormation } from "@/actions/fiche";
+import { supprimerErasmus, supprimerExperience, supprimerFormation, supprimerFormationComplementaire } from "@/actions/fiche";
 import { BoutonSupprimer } from "@/components/bouton-supprimer";
 import { Pastille, Vide, classeLien } from "@/components/ui";
-import type { Erasmus, Experience, Formation, Etablissement } from "@/generated/prisma/client";
+import type { Erasmus, Experience, Formation, FormationComplementaire, Etablissement } from "@/generated/prisma/client";
+import { LIBELLES_COMPLEMENTAIRE, anneesComplementaire } from "@/lib/complementaires";
 import { LIBELLES_NIVEAU, LIBELLES_TYPE_EXPERIENCE, libellePromo, periode } from "@/lib/format";
 import { LIBELLES_DUREE_ERASMUS, nomPays } from "@/lib/pays";
 
@@ -78,6 +79,38 @@ export function ListeFormations({
                 <Pencil size={14} aria-hidden /> Modifier
               </Link>
               <BoutonSupprimer action={supprimerFormation} champs={champsSuppression(personneId, f.id)} demanderMotif={demanderMotif} />
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+    </>
+  );
+}
+
+export function ListeComplementaires({ personneId, parametre, elements, demanderMotif }: Proprietes<FormationComplementaire>) {
+  return (
+    <>
+    {elements.length === 0 ? (
+      <Vide>Aucune formation complémentaire renseignée.</Vide>
+    ) : (
+      <ul className="divide-y divide-bordeaux-700/10">
+        {elements.map((f) => (
+          <li key={f.id} className="flex flex-wrap items-start justify-between gap-3 py-4">
+            <div>
+              <p className="flex flex-wrap items-center gap-2 font-semibold text-ink">
+                {f.titre}
+                <Pastille>{LIBELLES_COMPLEMENTAIRE[f.type].un}</Pastille>
+              </p>
+              <p className="text-sm text-ink-soft">
+                {[f.organisme, anneesComplementaire(f), f.resultat && `Score : ${f.resultat}`].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link href={`/espace/ma-fiche/formation-complementaire?${parametre}id=${f.id}`} className={`inline-flex items-center gap-1 text-sm ${classeLien}`}>
+                <Pencil size={14} aria-hidden /> Modifier
+              </Link>
+              <BoutonSupprimer action={supprimerFormationComplementaire} champs={champsSuppression(personneId, f.id)} demanderMotif={demanderMotif} />
             </div>
           </li>
         ))}

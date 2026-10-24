@@ -115,6 +115,7 @@ async function fusionnerFiches(brouillonId: string, cibleId: string) {
 
   await prisma.$transaction([
     prisma.formation.updateMany({ where: { personneId: brouillonId }, data: { personneId: cibleId } }),
+    prisma.formationComplementaire.updateMany({ where: { personneId: brouillonId }, data: { personneId: cibleId } }),
     prisma.experience.updateMany({ where: { personneId: brouillonId }, data: { personneId: cibleId } }),
     prisma.erasmus.updateMany({ where: { personneId: brouillonId }, data: { personneId: cibleId } }),
     prisma.noteModification.updateMany({ where: { personneId: brouillonId }, data: { personneId: cibleId } }),

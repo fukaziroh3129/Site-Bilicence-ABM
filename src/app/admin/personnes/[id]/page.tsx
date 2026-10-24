@@ -23,6 +23,7 @@ export default async function AdminPersonne({ params }: PageProps<"/admin/person
     include: {
       compte: { select: { id: true, email: true, statut: true, role: true } },
       formations: { orderBy: [{ anneeDebut: "desc" }, { creeLe: "desc" }] },
+      formationsComplementaires: { orderBy: [{ anneeDebut: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
       experiences: { orderBy: [{ debut: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
       erasmus: { include: { universite: true }, orderBy: [{ annee: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
       notes: { orderBy: { creeLe: "desc" } },

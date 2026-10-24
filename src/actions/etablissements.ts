@@ -50,6 +50,7 @@ export async function enregistrerEtablissement(formData: FormData) {
   await prisma.$transaction([
     prisma.etablissement.update({ where: { id }, data: { ...d, aControler: false } }),
     prisma.formation.updateMany({ where: { etablissementId: id }, data: { etablissement: d.nom } }),
+    prisma.formationComplementaire.updateMany({ where: { etablissementId: id }, data: { organisme: d.nom } }),
   ]);
   rafraichir();
 }
@@ -69,6 +70,7 @@ export async function fusionnerEtablissement(formData: FormData) {
   await prisma.$transaction([
     prisma.erasmus.updateMany({ where: { universiteId: id }, data: { universiteId: cible.id } }),
     prisma.formation.updateMany({ where: { etablissementId: id }, data: { etablissementId: cible.id, etablissement: cible.nom } }),
+    prisma.formationComplementaire.updateMany({ where: { etablissementId: id }, data: { etablissementId: cible.id, organisme: cible.nom } }),
     prisma.etablissement.delete({ where: { id } }),
   ]);
   rafraichir();
@@ -78,11 +80,12 @@ export async function fusionnerEtablissement(formData: FormData) {
 export async function supprimerEtablissement(formData: FormData) {
   await exigerBureau();
   const id = String(formData.get("id"));
-  const [sejours, formations] = await Promise.all([
+  const [sejours, formations, complementaires] = await Promise.all([
     prisma.erasmus.count({ where: { universiteId: id } }),
     prisma.formation.count({ where: { etablissementId: id } }),
+    prisma.formationComplementaire.count({ where: { etablissementId: id } }),
   ]);
-  if (sejours + formations > 0) return;
+  if (sejours + formations + complementaires > 0) return;
   await prisma.etablissement.delete({ where: { id } });
   rafraichir();
 }

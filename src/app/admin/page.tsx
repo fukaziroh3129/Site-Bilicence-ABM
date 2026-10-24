@@ -30,6 +30,7 @@ export default async function TableauDeBord() {
     etablissementsAControler,
     formationsAClasser,
     cartesAControler,
+    formationsAReclasser,
     membresActifs,
     fiches,
     fichesPubliques,
@@ -68,6 +69,7 @@ export default async function TableauDeBord() {
       orderBy: { creeLe: "desc" },
     }),
     prisma.personne.count({ where: { ...FICHE_PUBLIQUE, publicControleLe: null } }),
+    prisma.formation.count({ where: { complementaireSuggere: { not: null }, complementaireEcarte: false } }),
     prisma.user.count({ where: { statut: "ACTIF" } }),
     prisma.personne.count(),
     prisma.personne.count({ where: { consentementPublic: true } }),
@@ -79,7 +81,7 @@ export default async function TableauDeBord() {
 
   const universitesErasmus = etablissementsAControler.filter((e) => e._count.sejours > 0);
   const autresEtablissements = etablissementsAControler.filter((e) => e._count.sejours === 0);
-  const aControler = domainesAControler.length + etablissementsAControler.length + formationsAClasser.length + cartesAControler;
+  const aControler = domainesAControler.length + etablissementsAControler.length + formationsAClasser.length + cartesAControler + formationsAReclasser;
   const enAttente = nbComptes + nbOffres;
 
   // Fil des derniers ajouts des membres, du plus récent au plus ancien.
@@ -207,6 +209,9 @@ export default async function TableauDeBord() {
               { n: domainesAControler.length, libelle: accorde(domainesAControler.length, "domaine", "domaines"), href: "/admin/domaines" },
               { n: formationsAClasser.length, libelle: accorde(formationsAClasser.length, "formation à classer (mention)", "formations à classer (mention)"), href: "/admin/mentions" },
               { n: cartesAControler, libelle: accorde(cartesAControler, "carte publique à relire", "cartes publiques à relire"), href: "/admin/devenir" },
+              ...(formationsAReclasser > 0
+                ? [{ n: formationsAReclasser, libelle: accorde(formationsAReclasser, "formation complémentaire à reclasser", "formations complémentaires à reclasser"), href: "/admin/formations-complementaires" }]
+                : []),
             ].map((t) => (
               <li key={t.libelle}>
                 <Link

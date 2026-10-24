@@ -7,17 +7,18 @@ import Link from "next/link";
 import { SceauFiligrane } from "@/components/anime";
 import { BasculeEtape } from "@/components/fiche/bascule-etape";
 import { EtapeAujourdhui, EtapeCarte, EtapeIdentite } from "@/components/fiche/formulaires-etapes";
-import { ListeErasmus, ListeExperiences, ListeFormations } from "@/components/fiche/listes-fiche";
+import { ListeComplementaires, ListeErasmus, ListeExperiences, ListeFormations } from "@/components/fiche/listes-fiche";
 import { ApercuCarte } from "@/components/parcours/apercu-carte";
 import type { CarteParcours } from "@/components/parcours/types";
 import { buttonClasses, classeLien } from "@/components/ui";
-import type { Erasmus, Experience, Formation, Personne, Etablissement } from "@/generated/prisma/client";
+import type { Erasmus, Experience, Formation, FormationComplementaire, Personne, Etablissement } from "@/generated/prisma/client";
 import { ETAPES_FICHE, completude, encouragement, estEnBiLicence, type EtapeFiche } from "@/lib/completude";
 import { MAX_DOMAINES_PAR_FICHE, optionsDomaines } from "@/lib/domaines";
 import { promoEnCours } from "@/lib/format";
 
 type PersonneComplete = Personne & {
   formations: (Formation & { mention: { libelle: string } | null })[];
+  formationsComplementaires: FormationComplementaire[];
   experiences: Experience[];
   erasmus: (Erasmus & { universite: Etablissement })[];
 };
@@ -25,7 +26,7 @@ type PersonneComplete = Personne & {
 const INTRODUCTIONS: Record<EtapeFiche, string> = {
   identite: "Commençons par l’essentiel. Vos coordonnées ne sont jamais publiques : vous choisissez celles que les membres connectés peuvent voir.",
   aujourdhui: "Ce que vous faites en ce moment : c’est la première chose que regardent les étudiants.",
-  etudes: "Masters, écoles, doubles diplômes… Chaque formation s’ajoute à votre parcours, après la bi-licence.",
+  etudes: "Votre parcours d’études après la bi-licence, et tout ce que vous avez suivi à côté : diplômes universitaires, autre licence, certifications, MOOC.",
   experiences:
     "Stages, alternances, emplois, engagement associatif. Vos stages alimentent l’archive des stages, très consultée par les plus jeunes : missions, comment vous les avez obtenus, rapport…",
   erasmus: "Un semestre ou une année à l’étranger ? Votre retour aide celles et ceux qui hésitent à partir. Pas parti ? Indiquez-le simplement ci-dessous.",
@@ -166,12 +167,16 @@ export async function AssistantFiche({
             {liste && (
               <div className="space-y-6">
                 {etape === "etudes" && (
-                  <ListeFormations
-                    personneId={personne.id}
-                    parametre=""
-                    elements={personne.formations}
-                    biLicence={{ promoEntree: personne.promoEntree, enCours: promoEnCours(personne.promoEntree) }}
-                  />
+                  <div>
+                    <h3 className="mb-1 font-display text-xl font-bold text-bordeaux-700">Après la bi-licence</h3>
+                    <p className="mb-4 text-sm text-ink-soft">Masters, écoles, doubles diplômes : la suite de vos études.</p>
+                    <ListeFormations
+                      personneId={personne.id}
+                      parametre=""
+                      elements={personne.formations}
+                      biLicence={{ promoEntree: personne.promoEntree, enCours: promoEnCours(personne.promoEntree) }}
+                    />
+                  </div>
                 )}
                 {etape === "experiences" && <ListeExperiences personneId={personne.id} parametre="" elements={personne.experiences} />}
                 {etape === "erasmus" && <ListeErasmus personneId={personne.id} parametre="" elements={personne.erasmus} />}
@@ -185,6 +190,25 @@ export async function AssistantFiche({
                     titre="Je suis encore en bi-licence"
                     aide="Votre étape « Études » est alors complète ; vous ajouterez votre master plus tard."
                   />
+                )}
+                {etape === "etudes" && (
+                  <>
+                    <Link href={liste.ajout} className={buttonClasses("outline", "petit")}>
+                      <Plus size={15} aria-hidden /> {liste.libelle}
+                    </Link>
+                    {/* Facultatives : elles ne comptent pas dans le taux de remplissage. */}
+                    <div className="border-t border-bordeaux-700/10 pt-6">
+                      <h3 className="mb-1 font-display text-xl font-bold text-bordeaux-700">Formations complémentaires</h3>
+                      <p className="mb-4 max-w-[62ch] text-sm text-ink-soft">
+                        Ce que vous avez suivi en parallèle ou en plus : un DU, une autre licence, une certification (TOEIC, Voltaire…), un
+                        MOOC. Votre avis aide les plus jeunes à choisir.
+                      </p>
+                      <ListeComplementaires personneId={personne.id} parametre="" elements={personne.formationsComplementaires} />
+                      <Link href="/espace/ma-fiche/formation-complementaire" className={`mt-4 ${buttonClasses("primary")}`}>
+                        <Plus size={16} aria-hidden /> Ajouter une formation complémentaire
+                      </Link>
+                    </div>
+                  </>
                 )}
                 {etape === "experiences" && personne.experiences.length === 0 && (
                   <BasculeEtape
@@ -206,9 +230,12 @@ export async function AssistantFiche({
                 )}
 
                 <div className="flex flex-wrap items-center gap-4 border-t border-bordeaux-700/10 pt-6">
-                  <Link href={liste.ajout} className={buttonClasses(declareSans ? "outline" : "primary")}>
-                    <Plus size={16} aria-hidden /> {etape === "etudes" && enBiLicence ? "Ajouter une formation suivie en parallèle" : liste.libelle}
-                  </Link>
+                  {/* Études : chaque bloc a son propre bouton d'ajout (ci-dessus). */}
+                  {etape !== "etudes" && (
+                    <Link href={liste.ajout} className={buttonClasses(declareSans ? "outline" : "primary")}>
+                      <Plus size={16} aria-hidden /> {liste.libelle}
+                    </Link>
+                  )}
                   {suivante && (
                     <Link href={`/espace/ma-fiche?etape=${suivante.cle}`} className={`inline-flex items-center gap-1 text-sm font-semibold ${classeLien}`}>
                       {nbListe[etape as keyof typeof nbListe] > 0 || declareSans ? "Continuer" : "Passer cette étape"} <ArrowRight size={15} aria-hidden />

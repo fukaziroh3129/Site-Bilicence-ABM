@@ -107,6 +107,13 @@ export const navigationMembres: EntreeMenu[] = [
       { href: "/espace/stages", label: "Archive des stages", description: "Tous les stages des membres, avec leurs fiches détaillées.", icone: "stages", restreint: true },
       { href: "/espace/offres", label: "Offres", description: "Stages et emplois transmis par le réseau.", icone: "offres", restreint: true },
       { href: "/erasmus", label: "Erasmus", description: "Les séjours des anciens à l’étranger, par pays et par université.", icone: "erasmus" },
+      {
+        href: "/espace/formations-complementaires",
+        label: "Formations complémentaires",
+        description: "DU, licences, certifications et MOOC suivis à côté, avec les avis des membres.",
+        icone: "complementaires",
+        restreint: true,
+      },
     ],
   },
   {
@@ -136,6 +143,12 @@ export const navigationAdmin: EntreeMenu[] = [
       { href: "/admin/domaines", label: "Domaines", description: "Domaines professionnels : contrôle, fusion, renommage.", icone: "domaines" },
       { href: "/admin/etablissements", label: "Établissements", description: "Universités, IEP et écoles : contrôle et fusion des doublons.", icone: "etablissements" },
       { href: "/admin/mentions", label: "Mentions", description: "Mentions de master et grands domaines d’études : classement, fusion.", icone: "mentions" },
+      {
+        href: "/admin/formations-complementaires",
+        label: "Formations complémentaires",
+        description: "Reclasser les DU, certifications, MOOC saisis comme masters ; regrouper les écritures.",
+        icone: "complementaires",
+      },
     ],
   },
   { href: "/admin/offres", label: "Offres", icone: "offres" },

@@ -7,6 +7,7 @@
 
 import {
   Archive,
+  Award,
   BookUser,
   BriefcaseBusiness,
   ChartColumn,
@@ -47,6 +48,7 @@ const ICONES: Record<string, LucideIcon> = {
   stages: Archive,
   offres: BriefcaseBusiness,
   erasmus: Globe,
+  complementaires: Award,
   drive: FolderOpen,
   fiche: IdCard,
   compte: UserCog,

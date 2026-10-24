@@ -4,13 +4,14 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { FormulaireInfos } from "@/components/fiche/formulaire-infos";
-import { ListeErasmus, ListeExperiences, ListeFormations } from "@/components/fiche/listes-fiche";
+import { ListeComplementaires, ListeErasmus, ListeExperiences, ListeFormations } from "@/components/fiche/listes-fiche";
 import { TitreSection, classeLien } from "@/components/ui";
-import type { Erasmus, Experience, Formation, Personne, Etablissement } from "@/generated/prisma/client";
+import type { Erasmus, Experience, Formation, FormationComplementaire, Personne, Etablissement } from "@/generated/prisma/client";
 import { MAX_DOMAINES_PAR_FICHE, optionsDomaines } from "@/lib/domaines";
 
 type PersonneComplete = Personne & {
   formations: Formation[];
+  formationsComplementaires: FormationComplementaire[];
   experiences: Experience[];
   erasmus: (Erasmus & { universite: Etablissement })[];
 };
@@ -48,6 +49,19 @@ export async function EditeurFiche({
           Formations après la licence
         </TitreSection>
         <ListeFormations personneId={personne.id} parametre={parametre} elements={personne.formations} demanderMotif={demanderMotif} />
+      </section>
+
+      <section>
+        <TitreSection
+          action={
+            <Link href={`/espace/ma-fiche/formation-complementaire?${parametre}`} className={`inline-flex items-center gap-1 text-sm ${classeLien}`}>
+              <Plus size={16} aria-hidden /> Ajouter une formation complémentaire
+            </Link>
+          }
+        >
+          Formations complémentaires (DU, certifications, MOOC…)
+        </TitreSection>
+        <ListeComplementaires personneId={personne.id} parametre={parametre} elements={personne.formationsComplementaires} demanderMotif={demanderMotif} />
       </section>
 
       <section>

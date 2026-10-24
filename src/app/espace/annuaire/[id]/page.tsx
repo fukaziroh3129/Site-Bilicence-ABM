@@ -18,6 +18,7 @@ export default async function FicheAnnuaire({ params }: PageProps<"/espace/annua
     where: { id, ...FICHE_VISIBLE },
     include: {
       formations: { orderBy: [{ anneeDebut: "desc" }, { creeLe: "desc" }] },
+      formationsComplementaires: { orderBy: [{ anneeDebut: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
       experiences: { orderBy: [{ debut: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
       erasmus: { include: { universite: true }, orderBy: [{ annee: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }] },
     },

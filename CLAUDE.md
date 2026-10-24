@@ -239,6 +239,21 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   - Public (`StatsDevenir`) : le podium « Leurs domaines » est devenu « Ce qu'ils ont étudié » (top 3 des grands domaines
     d'études) ; filtre du carrousel `?famille=<code>` (`CarteParcours.familles`).
   - Maquette validée : `../maquettes/statistiques-reseau.html` (variante B).
+- **Formations complémentaires (24 octobre 2026, choix de Guillaume ; maquette `../maquettes/formations-complementaires.html`)** :
+  table `FormationComplementaire` (`type` DU | LICENCE | CERTIFICATION | MOOC | AUTRE, `titre`, `organisme` + `etablissementId`
+  pour un DU ou une licence — liste commune, recopiée lors d'un renommage/fusion d'établissement —, années, `resultat` = score
+  d'une certification, `avis` 600 car.). Séparée de `Formation` : ni mention, ni domaines, ni statistiques de masters, ni taux de
+  remplissage. Outils sans dépendance serveur dans `src/lib/complementaires.ts` (libellés, `cleFormation` / `adresseFormation` =
+  regroupement des titres identiques aux accents/majuscules/ponctuation près, `detecterComplementaire`). Saisie : bloc de l'étape
+  « Études » de Ma fiche + `/espace/ma-fiche/formation-complementaire` (actions `enregistrerFormationComplementaire` /
+  `supprimerFormationComplementaire` de `src/actions/fiche.ts`, motif ADM-02). Affichage : rubrique de la fiche annuaire
+  (`VueFiche`), jamais sur la page publique ; page `/espace/formations-complementaires` (menu Opportunités, membres validés) :
+  formations regroupées, part de chacune dans toutes les formations complémentaires, panneau latéral des personnes et avis
+  (`?formation=<adresse>` l'ouvre). Reclassement : `Formation.complementaireSuggere` (type proposé par la détection, recalculée à
+  chaque enregistrement d'une formation) et `complementaireEcarte` (le bureau a dit « c'est un master ») ; onglet
+  `/admin/formations-complementaires` (menu Listes : « À reclasser », rangement réservé aux administrateurs avec note à la personne ;
+  « Regroupements » : renommer, réunir deux écritures), outils `src/lib/detection-complementaires.ts`, script
+  `npm run complementaires:detecter` (simulation, `-- --confirmer`). Tuile du tableau de bord quand il y a des formations à reclasser.
 - Patchs de l'administration (PATCHS.md, partie 3, appliqués le 4 octobre 2026) :
   - Rôles (ADM-01) : voir « Authentification » ci-dessus. Page `/admin/comptes` : boutons selon
     `peutChangerRole` ; « Lien de mot de passe » envoie un lien de réinitialisation (le bureau ne voit

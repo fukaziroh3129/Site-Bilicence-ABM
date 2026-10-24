@@ -3,11 +3,16 @@
 // parcours et expériences à gauche, encadré « Contacter » collant à droite.
 
 import { MapPin, Mail, Phone, SquareUser } from "lucide-react";
+import Link from "next/link";
 import { SceauFiligrane } from "@/components/anime";
+import { ICONES_COMPLEMENTAIRE } from "@/components/complementaires/icones";
 import { DetailExperience, partages } from "@/components/fiche/detail-experience";
 import { Initiales, Panneau, Pastille, TitreSection, Vide, classeLien } from "@/components/ui";
-import type { Erasmus, Experience, Formation, Personne, Etablissement } from "@/generated/prisma/client";
+import type { Erasmus, Experience, Formation, FormationComplementaire, Personne, Etablissement } from "@/generated/prisma/client";
+import { LIBELLES_COMPLEMENTAIRE, adresseFormation, anneesComplementaire, pendantBiLicence } from "@/lib/complementaires";
+import { prisma } from "@/lib/db";
 import { dictionnaireDomaines } from "@/lib/domaines";
+import { FICHE_VISIBLE } from "@/lib/visibilite";
 import {
   LIBELLES_NIVEAU,
   LIBELLES_STATUT_ACTUEL,
@@ -22,6 +27,7 @@ import { LIBELLES_DUREE_ERASMUS, nomPays } from "@/lib/pays";
 
 type PersonneComplete = Personne & {
   formations: Formation[];
+  formationsComplementaires?: FormationComplementaire[];
   experiences: Experience[];
   erasmus?: (Erasmus & { universite: Etablissement })[];
 };
@@ -51,6 +57,18 @@ export async function VueFiche({
 
   const situation = [personne.situationActuelle, personne.structureActuelle].filter(Boolean).join(", ");
   const erasmus = personne.erasmus ?? [];
+  const complementaires = personne.formationsComplementaires ?? [];
+  // Nombre de membres ayant suivi chaque formation (lien vers la page « Formations complémentaires »).
+  const suivies = new Map<string, number>();
+  if (complementaires.length > 0) {
+    const toutes = await prisma.formationComplementaire.findMany({ where: { personne: FICHE_VISIBLE }, select: { titre: true, personneId: true } });
+    const parCle = new Map<string, Set<string>>();
+    for (const f of toutes) {
+      const cle = adresseFormation(f.titre);
+      parCle.set(cle, (parCle.get(cle) ?? new Set()).add(f.personneId));
+    }
+    for (const [cle, ids] of parCle) suivies.set(cle, ids.size);
+  }
 
   return (
     <div className="space-y-8">
@@ -127,6 +145,54 @@ export async function VueFiche({
               </li>
             </ol>
           </section>
+
+          {complementaires.length > 0 && (
+            <section className="space-y-5">
+              <TitreSection>Formations complémentaires</TitreSection>
+              <ul className="grid gap-4 md:grid-cols-2">
+                {complementaires.map((f) => {
+                  const Icone = ICONES_COMPLEMENTAIRE[f.type];
+                  const cle = adresseFormation(f.titre);
+                  const autres = (suivies.get(cle) ?? 1) - 1;
+                  return (
+                    <li key={f.id} id={f.id} className="flex scroll-mt-28 flex-col rounded-abm-lg border border-bordeaux-700/15 bg-white p-5 shadow-abm-card">
+                      <p className="flex items-center gap-2.5">
+                        <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-abm-sm bg-bordeaux-100 text-bordeaux-700">
+                          <Icone size={16} />
+                        </span>
+                        <Pastille>{LIBELLES_COMPLEMENTAIRE[f.type].un}</Pastille>
+                      </p>
+                      <p className="mt-3 font-display text-lg font-bold leading-snug text-ink">{f.titre}</p>
+                      <p className="text-sm text-ink-soft">
+                        {[f.organisme, anneesComplementaire(f), pendantBiLicence(f, personne.promoEntree) && "pendant la bi-licence"].filter(Boolean).join(" · ")}
+                      </p>
+                      {f.resultat && (
+                        <p className="mt-2 flex items-baseline gap-2">
+                          <span className="font-impact text-2xl leading-none text-bordeaux-700">{f.resultat}</span>
+                          <span className="eyebrow text-[11px] text-ink-soft">score</span>
+                        </p>
+                      )}
+                      {f.avis && (
+                        <blockquote className="relative mt-4 whitespace-pre-line rounded-abm-sm bg-beige-papier py-3 pl-10 pr-4 font-display text-[15px] italic leading-relaxed text-bordeaux-700">
+                          <span aria-hidden className="absolute left-3 top-0 font-display text-4xl not-italic leading-none text-bordeaux-300">
+                            “
+                          </span>
+                          {f.avis}
+                        </blockquote>
+                      )}
+                      {autres > 0 && (
+                        <p className="mt-auto pt-4 text-sm">
+                          <Link href={`/espace/formations-complementaires?formation=${cle}`} className={classeLien}>
+                            {autres} autre{autres > 1 ? "s" : ""} membre{autres > 1 ? "s" : ""} l’{autres > 1 ? "ont" : "a"} suivie →
+                          </Link>
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
 
           <section className="space-y-5">
             <TitreSection>Expériences</TitreSection>
