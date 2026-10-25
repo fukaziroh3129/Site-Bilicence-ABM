@@ -175,7 +175,7 @@ function CarteCursus({ onFermer }: { onFermer: () => void }) {
         </aside>
       </div>
       <p className={styles.source}>
-        Maquette 2024-2025 de la Faculté d’Économie, susceptible d’évoluer d’une année à l’autre. Des options facultatives
+        Maquette de la plaquette de la bi-licence (version V.056), susceptible d’évoluer d’une année à l’autre. Des options facultatives
         (sport, projet étudiant, certification Voltaire, PIX…) s’ajoutent chaque semestre.
       </p>
     </div>
@@ -235,8 +235,8 @@ function MiniFiche({ matiere: x, onFermer }: { matiere: Matiere; onFermer: () =>
         <div>
           <dt>Crédits</dt>
           <dd>
-            {x.ects}
-            <small>&nbsp;ECTS</small>
+            {x.creditsNonPrecises ? "—" : x.ects}
+            {!x.creditsNonPrecises && <small>&nbsp;ECTS</small>}
           </dd>
         </div>
         {x.cm !== undefined && (

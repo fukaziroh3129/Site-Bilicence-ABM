@@ -62,6 +62,35 @@ export function SiteFooter() {
             )}
           </ul>
         </nav>
+
+        {/* Les deux facultés de la bi-licence : versions blanches des logos, fond transparent (comme le sceau de l'ABM) */}
+        <div className="flex flex-wrap items-center gap-x-10 gap-y-5 border-t border-white/12 pt-8 md:col-span-2">
+          <p className="eyebrow text-white/70">Une formation portée par</p>
+          <ul className="flex flex-wrap items-center gap-x-8 gap-y-4">
+            <li>
+              <a
+                href="https://economie.edu.umontpellier.fr/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block opacity-85 transition-opacity hover:opacity-100"
+              >
+                <Image src="/brand/logo-universite-faculte-economie-blanc.png" alt="Faculté d’Économie, Université de Montpellier" width={800} height={174} className="h-11 w-auto" />
+                <span className="sr-only"> (nouvel onglet)</span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://droit.edu.umontpellier.fr/science-politique/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block opacity-85 transition-opacity hover:opacity-100"
+              >
+                <Image src="/brand/logo-faculte-droit-science-politique-blanc.png" alt="Faculté de Droit et de Science politique, Montpellier" width={320} height={320} className="size-14" />
+                <span className="sr-only"> (nouvel onglet)</span>
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
       <div className="relative border-t border-white/12">
         <p className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-1 px-4 py-5 text-xs text-white/60 sm:px-8">

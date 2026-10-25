@@ -484,3 +484,43 @@
   color: var(--abm-bordeaux-700);
   font-weight: 600;
 }
+
+/* Filtre de niveau (Tous / Licence / Master), même pilule que Europe / Monde */
+.niveau {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.etiquette {
+  color: var(--abm-ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+.compte {
+  margin-left: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+/* Niveau d'un séjour dans le panneau des membres */
+.sejours .pastille {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 8px;
+  border: 1px solid var(--abm-bordeaux-300);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--abm-bordeaux-700);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 20px;
+}
+.noteNiveau {
+  margin: 14px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(92, 26, 30, 0.12);
+  color: var(--abm-ink-soft);
+  font-size: 13px;
+}

@@ -1,6 +1,10 @@
-// Contenu de la page « La formation » : matières, chiffres d'admission, sources.
-// Tout vient de sources officielles (voir SOURCES) ; à mettre à jour chaque année.
-//  - Matières, crédits et heures : plaquette 2024-2025 de la Faculté d'Économie (maquette complète).
+// Contenu de la page « La formation » : la plaquette officielle de l'université, remise en forme.
+// Tout vient de sources officielles (voir SOURCES et DOCUMENTS) ; à mettre à jour chaque année.
+//  - Textes (présentation, attendus, objectifs, organisation, admission, contacts) : plaquette de la
+//    bi-licence (version V.056, décembre 2025) et fiche de la formation du catalogue de l'UM (mise à jour
+//    du 19 février 2026). Les textes de la plaquette sont repris tels quels (typographie corrigée).
+//  - Matières, crédits et heures : plaquette (maquette complète). Les crédits de la plaquette totalisent
+//    30 par semestre ; le catalogue de l'UM les répartit autrement entre ses « UE » : on suit la plaquette.
 //    La discipline de chaque matière suit la faculté qui l'enseigne (catalogue des formations de l'UM) ;
 //    l'anglais, l'informatique, le projet personnel et la préparation au grand oral sont « communs ».
 //  - Admission : données ouvertes Parcoursup (sessions 2021 à 2025).
@@ -30,6 +34,8 @@ export type Matiere = {
   td?: number; // heures de travaux dirigés
   /** Descriptif du contenu : non publié par l'université pour l'instant (à compléter). */
   contenu?: string;
+  /** Vrai quand la plaquette ne donne pas le nombre de crédits de la matière (`ects` vaut alors 0). */
+  creditsNonPrecises?: boolean;
 };
 
 const m = (
@@ -91,6 +97,8 @@ export const MATIERES: Matiere[] = [
   m(5, "ECO", "Organisation industrielle", 4, 30, 15),
   m(5, "ECO", "Histoire de la pensée économique", 3, 30),
   m(5, "ECO", "Économie des médias", 2, 20),
+  // Ajoutée dans la plaquette V.056 (20 h de cours) sans crédits indiqués : le total du semestre fait déjà 30.
+  { ...m(5, "ECO", "Transition écologique et développement soutenable", 0, 20), creditsNonPrecises: true },
   m(5, "ECO", "Option au choix : problèmes économiques contemporains approfondis ou économétrie", 3, 20),
   m(5, "COMMUN", "Anglais 5", 2, 10, 10),
   m(5, "COMMUN", "Préparation au grand oral 1", 2, undefined, 20),
@@ -134,31 +142,39 @@ export const PARCOURSUP = {
   fiche: "https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation?g_ta_cod=45377&typeBac=0&originePc=0",
 };
 
-// Présentations tirées de la plaquette de la bi-licence 2024-2025 et des fiches de laboratoire (MRE, CEPEL).
-// Même forme pour les deux : statut, spécialités, enseignements, rôle dans la bi-licence (sans pronom).
+// Statut (enseignant dans sa faculté, chercheur dans son laboratoire) : texte envoyé par les responsables eux-mêmes
+// (24 octobre 2026) ; spécialités tirées de la plaquette et des fiches de laboratoire (MRE, CEPEL) ; adresses publiées
+// sur la fiche de l'UM. Même forme pour les deux : statut, spécialités, enseignements, rôle dans la bi-licence (sans pronom).
+// Leur photo arrivera plus tard (emplacement « Photo à ajouter » dans la page).
 export const RESPONSABLES = [
   {
     nom: "Thomas Cortade",
+    email: "thomas.cortade@umontpellier.fr",
     fonction: "Responsable pédagogique de la bi-licence",
+    enseignant: "Maître de conférences (MCF) à la Faculté d’Économie",
+    chercheur: "Laboratoire MRE (Montpellier Recherche en Économie)",
     presentation:
-      "Maître de conférences en économie au laboratoire MRE, spécialiste d’économie industrielle et de politique de la concurrence. Enseignements notamment : travaux dirigés de microéconomie et cours d’organisation industrielle. Interlocuteur de la bi-licence pour la Faculté d’Économie.",
+      "Spécialiste d’économie industrielle et de politique de la concurrence. Enseignements notamment : travaux dirigés de microéconomie et cours d’organisation industrielle. Interlocuteur de la bi-licence pour la Faculté d’Économie.",
   },
   {
     nom: "Éric Savarese",
+    email: "eric.savarese@umontpellier.fr",
     fonction: "Responsable pédagogique de la bi-licence",
+    enseignant: "Professeur des universités (PR) à la Faculté de Droit et de Science politique",
+    chercheur: "Laboratoire CEPEL (Centre d’études politiques et sociales)",
     presentation:
-      "Professeur de science politique au laboratoire CEPEL, spécialiste de la citoyenneté, des mémoires et des migrations. Enseignements notamment : théorie politique et épistémologie des sciences sociales. Interlocuteur de la bi-licence pour la Faculté de Droit et de Science politique.",
+      "Spécialiste de la citoyenneté, des mémoires et des migrations. Enseignements notamment : théorie politique et épistémologie des sciences sociales. Interlocuteur de la bi-licence pour la Faculté de Droit et de Science politique.",
   },
 ];
 
 export const SOURCES = [
   {
-    libelle: "Fiche de la licence Économie, Science politique (catalogue des formations de l’UM, mise à jour du 19 février 2026)",
-    url: "https://formations-en.umontpellier.fr/plugins/odf-web/um1/_content/program-bi-licence-mention-science-politique-et-economie/LICENCE%20%C3%89CONOMIE,%20SCIENCE%20POLITIQUE.pdf",
+    libelle: "Plaquette de la bi-licence (version V.056, décembre 2025), Faculté d’Économie et Faculté de Droit et de Science politique",
+    url: "https://formations.umontpellier.fr/_object/ametys%253Aplugins/odf/ametys%253Acontents/program-bi-licence-mention-science-politique-et-economie/_attribute/attachments%5B1%5D/attachment/Bi-licence.pdf?download=true&objectId=programContent://7725d217-1b83-45cb-a51a-34e4a974ee97",
   },
   {
-    libelle: "Plaquette de la bi-licence 2024-2025 (Faculté d’Économie)",
-    url: "https://economie.edu.umontpellier.fr/files/2024/09/2024-2025_Bi-licence.pdf",
+    libelle: "Fiche de la licence Économie, Science politique (catalogue des formations de l’UM, mise à jour du 19 février 2026)",
+    url: "https://formations.umontpellier.fr/plugins/odf-web/um1/_content/program-bi-licence-mention-science-politique-et-economie/LICENCE%20%C3%89CONOMIE,%20SCIENCE%20POLITIQUE.pdf",
   },
   {
     libelle: "Parcoursup : vœux de poursuite d’études et réponses des établissements (données ouvertes, sessions 2021 à 2025)",

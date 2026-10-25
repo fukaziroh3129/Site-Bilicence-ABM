@@ -83,7 +83,7 @@ export function FormulaireExperience({
             etat={etat}
           />
         </div>
-        <Champ nom="organisation" libelle="Structure" aide="Entreprise, administration, association…" requis defaultValue={experience?.organisation} etat={etat} />
+        <Champ nom="organisation" libelle="Structure" aide="Le lieu où vous avez effectué votre stage : entreprise, administration, association…" requis defaultValue={experience?.organisation} etat={etat} />
         <Champ nom="poste" libelle="Poste ou mission" defaultValue={experience?.poste} etat={etat} />
         <div className="grid gap-5 sm:grid-cols-3">
           <Champ nom="ville" libelle="Ville" defaultValue={experience?.ville} etat={etat} />

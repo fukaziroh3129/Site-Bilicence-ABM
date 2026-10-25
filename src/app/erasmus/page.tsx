@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { CarteErasmus, type DestinationPays } from "@/components/erasmus/carte-erasmus";
-import { PageHeader } from "@/components/ui";
+import { type DestinationPays, type NiveauSejour, VueErasmus } from "@/components/erasmus/carte-erasmus";
 import { prisma } from "@/lib/db";
-import { LIBELLES_NIVEAU, libellePromo } from "@/lib/format";
+import { libellePromo } from "@/lib/format";
 import { LIBELLES_DUREE_ERASMUS, nomPays } from "@/lib/pays";
 import { obtenirSession } from "@/lib/session";
 import { FICHE_VISIBLE } from "@/lib/visibilite";
@@ -13,8 +12,12 @@ export const metadata: Metadata = {
   description: "Les universités et les pays où sont partis les étudiants de la bi-licence Économie / Science politique de Montpellier.",
 };
 
-export default async function PageErasmus() {
+// Fonction définie ici : une fonction exportée d'un composant client ne peut pas être appelée par la page serveur.
+const niveauxVides = (): Record<NiveauSejour, number> => ({ LICENCE: 0, MASTER: 0, AUCUN: 0 });
+
+export default async function PageErasmus({ searchParams }: { searchParams: Promise<{ niveau?: string }> }) {
   await connection(); // lecture de la base à chaque visite
+  const { niveau: niveauDemande } = await searchParams; // ?niveau=licence | master (lien partageable)
   const session = await obtenirSession();
   const membre = session?.user.statut === "ACTIF";
 
@@ -29,29 +32,30 @@ export default async function PageErasmus() {
     orderBy: [{ annee: { sort: "desc", nulls: "last" } }, { creeLe: "desc" }],
   });
 
+  // Chaque pays et chaque université garde le détail par niveau (licence, master, non précisé) :
+  // le filtre Licence / Master de la page recalcule tout dans le navigateur à partir de ces chiffres.
   const parPays = new Map<string, DestinationPays>();
   for (const s of sejours) {
     const u = s.universite;
-    const pays = parPays.get(u.pays) ?? { code: u.pays, nom: nomPays(u.pays), departs: 0, universites: [] };
+    const niveau: NiveauSejour = s.niveau ?? "AUCUN";
+    const pays = parPays.get(u.pays) ?? { code: u.pays, nom: nomPays(u.pays), departs: 0, parNiveau: niveauxVides(), universites: [] };
     parPays.set(u.pays, pays);
     pays.departs++;
+    pays.parNiveau[niveau]++;
     let univ = pays.universites.find((x) => x.id === u.id);
     if (!univ) {
-      univ = { id: u.id, nom: u.nom, ville: u.ville, departs: 0, ...(membre ? { sejours: [] } : {}) };
+      univ = { id: u.id, nom: u.nom, ville: u.ville, departs: 0, parNiveau: niveauxVides(), ...(membre ? { sejours: [] } : {}) };
       pays.universites.push(univ);
     }
     univ.departs++;
+    univ.parNiveau[niveau]++;
     if (membre) {
       univ.sejours!.push({
         id: s.id,
         personneId: s.personne.id,
         nom: `${s.personne.prenom} ${s.personne.nom}`,
-        details: [
-          `Promo ${libellePromo(s.personne.promoEntree).replace("-", "–")}`,
-          s.niveau && LIBELLES_NIVEAU[s.niveau],
-          s.annee,
-          s.duree && LIBELLES_DUREE_ERASMUS[s.duree],
-        ]
+        niveau,
+        details: [`Promo ${libellePromo(s.personne.promoEntree).replace("-", "–")}`, s.annee, s.duree && LIBELLES_DUREE_ERASMUS[s.duree]]
           .filter(Boolean)
           .join(" · "),
         descriptif: s.descriptif,
@@ -63,36 +67,5 @@ export default async function PageErasmus() {
     .map((p) => ({ ...p, universites: p.universites.sort((a, b) => b.departs - a.departs || a.nom.localeCompare(b.nom, "fr")) }))
     .sort((a, b) => b.departs - a.departs || a.nom.localeCompare(b.nom, "fr"));
 
-  const nbUniversites = destinations.reduce((n, p) => n + p.universites.length, 0);
-  const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
-
-  return (
-    <>
-      <PageHeader
-        eyebrow="Partir pendant ses études"
-        title="Erasmus"
-        lead="Où sont partis les étudiants de la bi-licence : pays, universités et nombre de départs. Erasmus désigne ici tout séjour d’études à l’étranger, en Europe ou ailleurs."
-        aside={
-          destinations.length > 0 && (
-            <div className="border-l border-white/30 pl-6 lg:min-w-56">
-              <p className="font-impact text-7xl leading-none sm:text-8xl">{destinations.length}</p>
-              <p className="mt-1 font-display text-xl font-bold">{destinations.length > 1 ? "pays différents" : "pays"}</p>
-              <p className="mt-3 text-sm text-white/76">
-                {pluriel(sejours.length, "départ")} · {pluriel(nbUniversites, "université")}
-              </p>
-            </div>
-          )
-        }
-      />
-
-      <div className="mx-auto max-w-6xl space-y-10 px-4 py-12 sm:px-8">
-        <CarteErasmus destinations={destinations} membre={membre} />
-
-        <p className="border-t border-bordeaux-700/20 pt-6 text-sm text-ink-soft">
-          Sans compte, seuls les chiffres sont visibles : aucun nom n’apparaît sur cette page. Les membres
-          connectés voient qui est parti et peuvent lire les retours d’expérience sur les fiches.
-        </p>
-      </div>
-    </>
-  );
+  return <VueErasmus destinations={destinations} membre={membre} niveauInitial={niveauDemande === "licence" || niveauDemande === "master" ? niveauDemande : "tous"} />;
 }

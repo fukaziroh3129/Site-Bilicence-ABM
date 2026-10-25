@@ -116,9 +116,17 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   - Établissements : depuis ADM-03, type lu dans la liste commune (`decrireEtablissement`, voir partie 3
     ci-dessous) ; la reconnaissance par le nom (`reconnaitreEtablissement`) ne sert plus qu'à deviner le
     type d'un nouvel établissement et aux formations encore sans lien.
-  - Page Formation : contenu dans `src/lib/formation.ts` (maquette 2024-2025, chiffres Parcoursup
-    2021-2025, sources) ; carte du cursus en fenêtre `<dialog>` (`src/components/formation/`).
-    À mettre à jour chaque année.
+  - Page Formation (`/la-formation`) = la plaquette officielle de l'UM remise en forme (22 octobre 2026, demande des
+    responsables de formation) : textes dans `src/lib/plaquette.ts` (plaquette V.056 + fiche du catalogue UM du
+    19/02/2026, repris tels quels), matières/crédits/heures et chiffres Parcoursup dans `src/lib/formation.ts`.
+    Ordre de la page : présentation (texte du document Word convenu avec le service des plaquettes le 24 octobre 2026,
+    + photos des deux facultés), objectifs, admission, programme (la seule vue des matières est la carte du cursus en
+    fenêtre `<dialog>`, `src/components/formation/` : pas de tableaux par semestre, voulu par Guillaume), organisation,
+    poursuite d'études (photo de la remise des diplômes de la Faculté d'Économie, promotions 2020-2021) + statistiques des
+    anciens, contacts (responsables : enseignant dans sa faculté, chercheur dans son laboratoire ; photos à venir), puis
+    en FIN de page les liens vers les documents officiels (PDF de l'UM et pages des facultés : liens seulement, aucun PDF
+    copié sur le site). Pied de page du site : logos des deux facultés en version BLANCHE sur fond transparent (`public/brand/*-blanc.png`, tirés des fichiers couleur fournis : si les facultés envoient leurs propres versions blanches, les remplacer). À mettre à jour
+    chaque année (republication de la plaquette).
   - Actualités : case « à la une » (`Article.aLaUne`, grand format en tête) et archive paginée par année.
   - Bureau : frise animée (`src/components/bureau/frise-bureau.tsx`). **Fonctions et pôles = étiquettes créées en
     administration (8 octobre 2026, choix de Guillaume)** : table `Fonction` (`niveau` BUREAU | POLE, `ordre` = rang

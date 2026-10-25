@@ -15,6 +15,9 @@ import styles from "./carrousel.module.css";
 import { RechercheParcours } from "./recherche-parcours";
 import type { CarteParcours, DomaineFiltre } from "./types";
 
+/** Nombre de cartes affichées de chaque côté de la carte courante (au-delà, elles sont invisibles de toute façon). */
+const RAYON_AFFICHE = 4;
+
 /** Texte dans lequel porte la recherche libre. */
 function texteDe(c: CarteParcours, libelle: (code: string) => string) {
   return [
@@ -76,8 +79,9 @@ export function CarrouselParcours({
   const sceneRef = useRef<HTMLDivElement>(null);
   const refs = useRef<(HTMLDivElement | null)[]>([]);
   const position = useRef(0); // position « flottante » pendant un glissement
-  const depart = useRef<{ x: number; t: number } | null>(null);
+  const depart = useRef<{ x: number; y: number; t: number } | null>(null);
   const deplace = useRef(false);
+  const places = useRef(new WeakSet<HTMLElement>()); // cartes déjà positionnées au moins une fois
 
   /** Écart signé entre la carte i et la position f (le plus court chemin quand on boucle). */
   const ecart = useCallback(
@@ -93,7 +97,7 @@ export function CarrouselParcours({
   );
 
   const pas = useCallback(() => {
-    const largeur = refs.current[0]?.offsetWidth ?? 340;
+    const largeur = refs.current.find(Boolean)?.offsetWidth ?? 340;
     const etroit = (sceneRef.current?.offsetWidth ?? 1000) < 700;
     return { s1: largeur * (etroit ? 0.94 : 0.8), s2: largeur * 0.62, limite: etroit ? 1.6 : 2.6 };
   }, []);
@@ -104,6 +108,12 @@ export function CarrouselParcours({
       const { s1, s2, limite } = pas();
       refs.current.slice(0, n).forEach((el, i) => {
         if (!el) return;
+        // Carte qui vient d'être affichée (elle n'existait pas avant) : on la met en place sans la faire glisser depuis le centre.
+        const neuve = !places.current.has(el);
+        if (neuve) {
+          el.style.transition = "none";
+          places.current.add(el);
+        }
         const d = ecart(i, f);
         const a = Math.abs(d);
         const x = a <= 1 ? d * s1 : Math.sign(d) * (s1 + (a - 1) * s2);
@@ -113,6 +123,10 @@ export function CarrouselParcours({
         el.style.opacity = a > limite ? "0" : a > limite - 0.6 ? String((limite - a) / 0.6) : "1";
         el.style.pointerEvents = a > limite ? "none" : "";
         el.style.setProperty("--voile", String(Math.min(a, 2) * 0.3));
+        if (neuve) {
+          void el.offsetWidth;
+          el.style.transition = "";
+        }
       });
     },
     [ecart, n, pas],
@@ -186,7 +200,15 @@ export function CarrouselParcours({
     function bouger(e: PointerEvent) {
       if (!depart.current) return;
       const dx = e.clientX - depart.current.x;
-      if (!deplace.current && Math.abs(dx) < 6) return;
+      if (!deplace.current) {
+        const dy = e.clientY - depart.current.y;
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        // Geste plutôt vertical : c'est un défilement de la page (ou du parcours), le carrousel ne bouge pas.
+        if (Math.abs(dy) > Math.abs(dx)) {
+          depart.current = null;
+          return;
+        }
+      }
       if (!deplace.current) {
         deplace.current = true;
         sceneRef.current?.classList.add(styles.glisse);
@@ -275,7 +297,7 @@ export function CarrouselParcours({
         className={styles.scene}
         onPointerDown={(e) => {
           if (n && e.button === 0) {
-            depart.current = { x: e.clientX, t: performance.now() };
+            depart.current = { x: e.clientX, y: e.clientY, t: performance.now() };
             deplace.current = false;
           }
         }}
@@ -288,7 +310,10 @@ export function CarrouselParcours({
               : "Aucun parcours ne correspond à votre recherche."}
           </p>
         )}
-        {liste.map((c, i) => (
+        {liste.map((c, i) =>
+          // Seules les cartes proches de la courante existent : avec des dizaines de parcours, le téléphone
+          // ne porte pas des dizaines de cartes en 3D. Celles qui entrent dans la fenêtre arrivent déjà invisibles.
+          Math.abs(ecart(i, courant)) > RAYON_AFFICHE ? null : (
           <div
             key={c.id}
             ref={(el) => {
@@ -315,7 +340,8 @@ export function CarrouselParcours({
               onRetourner={() => setRetournee((r) => (r === c.id ? null : c.id))}
             />
           </div>
-        ))}
+          ),
+        )}
       </div>
 
       <div className={styles.commandes}>

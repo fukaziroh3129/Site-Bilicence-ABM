@@ -6,8 +6,8 @@
 //  - ailleurs, par ex. la page Formation (mode « lien ») : un clic ouvre /promotions déjà filtré.
 
 import { ArrowRight } from "lucide-react";
-import { motion } from "motion/react";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { Compteur } from "@/components/anime";
 import type { LigneStat, StatistiquesDevenir } from "@/lib/statistiques";
 
@@ -15,7 +15,7 @@ import type { LigneStat, StatistiquesDevenir } from "@/lib/statistiques";
 export const EVENEMENT_FILTRE = "abm:filtrer-parcours";
 export type DetailFiltre = { type: "domaine" | "famille" | "etablissement"; cle: string; libelle: string };
 
-const EASE = [0.16, 1, 0.3, 1] as const;
+const EASE_CSS = "cubic-bezier(0.16, 1, 0.3, 1)";
 const pourcent = (p: number) => Math.round(p * 100);
 
 /** Pourcentages des parties d'une barre empilée, arrondis pour que leur somme égale le total affiché. */
@@ -32,6 +32,48 @@ const MEDAILLES = [
   "bg-bordeaux-400 text-white",
   "bg-bordeaux-200 text-bordeaux-800",
 ];
+
+/**
+ * Piste grise + barre pleine. La barre est VISIBLE par défaut (page sans JavaScript, JavaScript lent, Safari) :
+ * seulement si elle est plus bas que l'écran à l'affichage, on la replie puis on la déroule quand la piste
+ * (qui a toujours une surface, contrairement à une barre à largeur nulle) entre dans l'écran.
+ */
+function PisteBarre({ rang, largeur, children }: { rang: number; largeur: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [replie, setReplie] = useState(false);
+
+  useEffect(() => {
+    const piste = ref.current;
+    if (!piste || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (piste.getBoundingClientRect().top < window.innerHeight * 0.9) return; // déjà à l'écran : on la laisse pleine
+    setReplie(true);
+    const observateur = new IntersectionObserver(
+      ([entree]) => {
+        if (!entree.isIntersecting) return;
+        setReplie(false);
+        observateur.disconnect();
+      },
+      { threshold: 0.5 },
+    );
+    observateur.observe(piste);
+    return () => observateur.disconnect();
+  }, []);
+
+  return (
+    <span ref={ref} aria-hidden className="mt-3 block h-3 isolate overflow-hidden rounded-abm-pill bg-bordeaux-100">
+      <span
+        className="flex h-full origin-left"
+        style={{
+          width: largeur,
+          transform: replie ? "scaleX(0)" : "scaleX(1)",
+          transition: `transform 1.1s ${EASE_CSS} ${0.15 + rang * 0.12}s`,
+        }}
+      >
+        {children}
+      </span>
+    </span>
+  );
+}
 
 function Ligne({
   ligne,
@@ -70,28 +112,19 @@ function Ligne({
         </span>
 
         {/* Barre (empilée pour les IEP), qui se remplit à l'apparition */}
-        <span aria-hidden className="mt-3 block h-3 overflow-hidden rounded-abm-pill bg-bordeaux-100">
-          <motion.span
-            className="flex h-full origin-left"
-            style={{ width: largeur(ligne.part) }}
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, amount: 0.8 }}
-            transition={{ duration: 1.1, delay: 0.15 + rang * 0.12, ease: EASE }}
-          >
-            {ligne.segments ? (
-              ligne.segments.map((s, i) => (
-                <span
-                  key={s.libelle}
-                  className={i === 0 ? "h-full bg-[image:var(--degrade-bouton)]" : "rayures-iep h-full"}
-                  style={{ width: `${(s.part / ligne.part) * 100}%` }}
-                />
-              ))
-            ) : (
-              <span className="h-full w-full bg-[image:var(--degrade-bouton)] transition-opacity group-hover:opacity-85" />
-            )}
-          </motion.span>
-        </span>
+        <PisteBarre rang={rang} largeur={largeur(ligne.part)}>
+          {ligne.segments ? (
+            ligne.segments.map((s, i) => (
+              <span
+                key={s.libelle}
+                className={i === 0 ? "h-full bg-[image:var(--degrade-bouton)]" : "rayures-iep h-full"}
+                style={{ width: `${(s.part / ligne.part) * 100}%` }}
+              />
+            ))
+          ) : (
+            <span className="h-full w-full bg-[image:var(--degrade-bouton)] transition-opacity group-hover:opacity-85" />
+          )}
+        </PisteBarre>
 
         {ligne.segments && (
           <span className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-soft">

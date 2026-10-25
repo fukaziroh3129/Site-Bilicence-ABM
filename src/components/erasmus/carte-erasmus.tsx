@@ -9,15 +9,23 @@
 import { ArrowLeft, MousePointerClick, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useFiltresDansAdresse } from "@/components/filtres-instantanes";
+import { PageHeader } from "@/components/ui";
 import carte from "@/lib/carte-monde.json";
 import { normaliser } from "@/lib/format";
 import styles from "./carte-erasmus.module.css";
+
+/** Niveau d'un séjour ; AUCUN = la fiche ne le précise pas (séjours importés, par exemple). */
+export type NiveauSejour = "LICENCE" | "MASTER" | "AUCUN";
+export type ParNiveau = Record<NiveauSejour, number>;
+const niveauxVides = (): ParNiveau => ({ LICENCE: 0, MASTER: 0, AUCUN: 0 });
 
 export type SejourMembre = {
   id: string;
   personneId: string;
   nom: string;
-  details: string; // « Promo 2021–2024 · Licence · 2023 · Un semestre »
+  niveau: NiveauSejour;
+  details: string; // « Promo 2021–2024 · 2023 · Un semestre »
   descriptif: string | null;
   aUnRetour: boolean;
 };
@@ -27,6 +35,7 @@ export type UniversiteCarte = {
   nom: string;
   ville: string | null;
   departs: number;
+  parNiveau: ParNiveau;
   sejours?: SejourMembre[]; // uniquement pour les membres connectés
 };
 
@@ -34,15 +43,125 @@ export type DestinationPays = {
   code: string;
   nom: string;
   departs: number;
+  parNiveau: ParNiveau;
   universites: UniversiteCarte[];
 };
+
+type FiltreNiveau = "tous" | "licence" | "master";
+const CLE_NIVEAU = { licence: "LICENCE", master: "MASTER" } as const;
+const classer = <T extends { departs: number }>(liste: T[], nom: (x: T) => string) =>
+  liste.sort((a, b) => b.departs - a.departs || nom(a).localeCompare(nom(b), "fr"));
+
+/** Ne garde que les départs du niveau choisi et recalcule les totaux ; « tous » renvoie les données telles quelles. */
+function filtrerParNiveau(destinations: DestinationPays[], filtre: FiltreNiveau): DestinationPays[] {
+  if (filtre === "tous") return destinations;
+  const cle = CLE_NIVEAU[filtre];
+  const gardees = destinations
+    .filter((p) => p.parNiveau[cle] > 0)
+    .map((p) => ({
+      ...p,
+      departs: p.parNiveau[cle],
+      universites: classer(
+        p.universites
+          .filter((u) => u.parNiveau[cle] > 0)
+          .map((u) => ({ ...u, departs: u.parNiveau[cle], sejours: u.sejours?.filter((s) => s.niveau === cle) })),
+        (u) => u.nom,
+      ),
+    }));
+  return classer(gardees, (p) => p.nom);
+}
+
+const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
+
+/** Page entière : bandeau, filtre de niveau et carte. Le filtre recalcule les chiffres du bandeau comme ceux de la carte. */
+export function VueErasmus({ destinations, membre, niveauInitial }: { destinations: DestinationPays[]; membre: boolean; niveauInitial: FiltreNiveau }) {
+  const [filtre, setFiltre] = useState<FiltreNiveau>(niveauInitial);
+  useFiltresDansAdresse({ niveau: filtre }, { niveau: "tous" });
+
+  const comptes = useMemo(() => {
+    const c = niveauxVides();
+    for (const d of destinations) for (const n of Object.keys(c) as NiveauSejour[]) c[n] += d.parNiveau[n];
+    return c;
+  }, [destinations]);
+  const visibles = useMemo(() => filtrerParNiveau(destinations, filtre), [destinations, filtre]);
+
+  const departs = visibles.reduce((n, p) => n + p.departs, 0);
+  const nbUniversites = visibles.reduce((n, p) => n + p.universites.length, 0);
+  const sansNiveau = comptes.AUCUN;
+  const note =
+    sansNiveau === 0
+      ? null
+      : filtre === "tous"
+        ? `Dont ${pluriel(sansNiveau, "départ")} sans niveau précisé.`
+        : `${pluriel(sansNiveau, "départ")} sans niveau précisé ne ${sansNiveau > 1 ? "figurent" : "figure"} pas dans cette vue.`;
+  const precision = filtre === "tous" ? "" : ` en ${filtre}`;
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Partir pendant ses études"
+        title="Erasmus"
+        lead="Où sont partis les étudiants de la bi-licence : pays, universités et nombre de départs, en licence comme en master. Erasmus désigne ici tout séjour d’études à l’étranger, en Europe ou ailleurs."
+        aside={
+          visibles.length > 0 && (
+            <div className="border-l border-white/30 pl-6 lg:min-w-56" aria-live="polite">
+              <p className="font-impact text-7xl leading-none sm:text-8xl">{visibles.length}</p>
+              <p className="mt-1 font-display text-xl font-bold">{visibles.length > 1 ? "pays différents" : "pays"}</p>
+              <p className="mt-3 text-sm text-white/76">
+                {pluriel(departs, "départ")}
+                {precision} · {pluriel(nbUniversites, "université")}
+              </p>
+            </div>
+          )
+        }
+      />
+
+      <div className="mx-auto max-w-6xl space-y-10 px-4 py-12 sm:px-8">
+        <CarteErasmus
+          destinations={visibles}
+          membre={membre}
+          filtre={filtre}
+          note={note}
+          selecteur={<ChoixNiveau valeur={filtre} onChange={setFiltre} comptes={comptes} />}
+        />
+
+        <p className="border-t border-bordeaux-700/20 pt-6 text-sm text-ink-soft">
+          Sans compte, seuls les chiffres sont visibles : aucun nom n’apparaît sur cette page. Les membres
+          connectés voient qui est parti et peuvent lire les retours d’expérience sur les fiches.
+        </p>
+      </div>
+    </>
+  );
+}
+
+/** Sélecteur Tous / Licence / Master, avec le nombre de départs de chaque niveau. */
+function ChoixNiveau({ valeur, onChange, comptes }: { valeur: FiltreNiveau; onChange: (v: FiltreNiveau) => void; comptes: ParNiveau }) {
+  const options: { valeur: FiltreNiveau; libelle: string; nombre: number }[] = [
+    { valeur: "tous", libelle: "Tous", nombre: comptes.LICENCE + comptes.MASTER + comptes.AUCUN },
+    { valeur: "licence", libelle: "Licence", nombre: comptes.LICENCE },
+    { valeur: "master", libelle: "Master", nombre: comptes.MASTER },
+  ];
+  return (
+    <div className={styles.niveau}>
+      <span className={styles.etiquette} id="etiquette-niveau">
+        Niveau
+      </span>
+      <div className={styles.vues} role="group" aria-labelledby="etiquette-niveau">
+        {options.map((o) => (
+          <button key={o.valeur} type="button" aria-pressed={valeur === o.valeur} onClick={() => onChange(o.valeur)}>
+            {o.libelle} <span className={styles.compte}>{o.nombre}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /** Classes de couleur : 1, 2–3, 4–6, 7–10, 11 et plus. */
 const PALIERS = [1, 2, 4, 7, 11];
 const COULEURS = ["var(--abm-bordeaux-200)", "var(--abm-bordeaux-300)", "var(--abm-bordeaux-400)", "var(--abm-bordeaux-600)", "var(--abm-bordeaux-800)"];
 const niveau = (n: number) => PALIERS.filter((p) => n >= p).length;
 
-const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 const rangTexte = (r: number) => (r === 1 ? "1re destination" : `${r}e destination`);
 
 type Boite = [number, number, number, number]; // x, y, largeur, hauteur (comme un viewBox)
@@ -123,7 +242,19 @@ function useZoom(svg: React.RefObject<SVGSVGElement | null>, cible: Boite) {
 
 type Suggestion = { type: "pays"; pays: DestinationPays } | { type: "universite"; pays: DestinationPays; universite: UniversiteCarte };
 
-export function CarteErasmus({ destinations, membre }: { destinations: DestinationPays[]; membre: boolean }) {
+function CarteErasmus({
+  destinations,
+  membre,
+  filtre,
+  note,
+  selecteur,
+}: {
+  destinations: DestinationPays[];
+  membre: boolean;
+  filtre: FiltreNiveau;
+  note: string | null;
+  selecteur: React.ReactNode;
+}) {
   const parCode = useMemo(() => new Map(destinations.map((d) => [d.code, d])), [destinations]);
   const total = destinations.reduce((s, d) => s + d.departs, 0);
   const maxDeparts = destinations[0]?.departs ?? 1; // la liste arrive triée
@@ -135,7 +266,9 @@ export function CarteErasmus({ destinations, membre }: { destinations: Destinati
   }, [destinations]);
 
   const [vue, setVue] = useState<"europe" | "monde">("europe");
-  const [choisi, setChoisi] = useState<string | null>(null);
+  const [choisiDemande, setChoisi] = useState<string | null>(null);
+  // Si le filtre fait disparaître le pays ouvert, on retombe sur la vue d'ensemble.
+  const choisi = choisiDemande && parCode.has(choisiDemande) ? choisiDemande : null;
   const [surlignee, setSurlignee] = useState<string | null>(null); // université mise en avant dans le panneau
   const [bulle, setBulle] = useState<{ code: string; x: number; y: number; gauche: boolean; haut: boolean } | null>(null);
 
@@ -179,6 +312,7 @@ export function CarteErasmus({ destinations, membre }: { destinations: Destinati
     <div className="space-y-4">
       <div className={styles.barre}>
         <RechercheDestinations destinations={destinations} onChoisir={(s) => ouvrir(s.pays.code, s.type === "universite" ? s.universite.id : null)} />
+        {selecteur}
         <div className={styles.vues} role="group" aria-label="Zone affichée">
           <button
             type="button"
@@ -342,6 +476,7 @@ export function CarteErasmus({ destinations, membre }: { destinations: Destinati
                         {u.sejours.map((s) => (
                           <li key={s.id}>
                             <Link href={`/espace/annuaire/${s.personneId}#${s.id}`}>{s.nom}</Link>
+                            {s.niveau !== "AUCUN" && <em className={styles.pastille}>{s.niveau === "LICENCE" ? "Licence" : "Master"}</em>}
                             <span>{s.details}</span>
                             {s.descriptif && <p>{s.descriptif}</p>}
                             {s.aUnRetour && <span>Retour d’expérience détaillé sur sa fiche.</span>}
@@ -358,7 +493,9 @@ export function CarteErasmus({ destinations, membre }: { destinations: Destinati
               <h2>Toutes les destinations</h2>
               <p className={styles.sousTitre}>Choisissez un pays, sur la carte ou dans la liste.</p>
               {destinations.length === 0 ? (
-                <p className={styles.sousTitre}>Les premiers séjours seront bientôt renseignés.</p>
+                <p className={styles.sousTitre}>
+                  {filtre === "tous" ? "Les premiers séjours seront bientôt renseignés." : `Aucun départ en ${filtre} n’est renseigné pour le moment.`}
+                </p>
               ) : (
                 <ol className={styles.classement}>
                   {destinations.map((d) => (
@@ -376,6 +513,7 @@ export function CarteErasmus({ destinations, membre }: { destinations: Destinati
                   ))}
                 </ol>
               )}
+              {note && <p className={styles.noteNiveau}>{note}</p>}
             </>
           )}
           {!membre && (
