@@ -78,17 +78,6 @@ export function SiteFooter() {
                 <span className="sr-only"> (nouvel onglet)</span>
               </a>
             </li>
-            <li>
-              <a
-                href="https://droit.edu.umontpellier.fr/science-politique/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block opacity-85 transition-opacity hover:opacity-100"
-              >
-                <Image src="/brand/logo-faculte-droit-science-politique-blanc.png" alt="Faculté de Droit et de Science politique, Montpellier" width={320} height={320} className="size-14" />
-                <span className="sr-only"> (nouvel onglet)</span>
-              </a>
-            </li>
           </ul>
         </div>
       </div>

@@ -43,7 +43,7 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   `estDuBureau()` / `estAdministrateur()`, et `peutChangerRole()` / `peutGererCompte()` pour agir
   sur un compte. Un seul propriétaire, jamais supprimé : il se transmet (`transfererPropriete`).
   `exigerCompte()` = connecté ET non refusé (comptes EN_ATTENTE compris) : réservé à l'accueil
-  `/espace`, « Ma fiche » (et ses sous-pages) et « Mon compte ».
+  `/espace`, « Ma fiche » (et ses sous-pages), « Mon compte » et le simulateur de moyenne.
   E-mails : Nodemailer + SMTP Brevo ; sans `SMTP_HOST`, ils s'affichent dans le terminal.
 - Formulaires : server actions (`src/actions/`) validées avec zod via `src/lib/formulaire.ts`
   (`valider`, `champ.*`), composants `src/components/formulaire.tsx` + `useActionState`.
@@ -125,7 +125,7 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
     poursuite d'études (photo de la remise des diplômes de la Faculté d'Économie, promotions 2020-2021) + statistiques des
     anciens, contacts (responsables : enseignant dans sa faculté, chercheur dans son laboratoire ; photos à venir), puis
     en FIN de page les liens vers les documents officiels (PDF de l'UM et pages des facultés : liens seulement, aucun PDF
-    copié sur le site). Pied de page du site : logos des deux facultés en version BLANCHE sur fond transparent (`public/brand/*-blanc.png`, tirés des fichiers couleur fournis : si les facultés envoient leurs propres versions blanches, les remplacer). À mettre à jour
+    copié sur le site). Pied de page du site : logo de la Faculté d’Économie en version BLANCHE (celui de la Faculté de Droit et de Science politique a été refusé et retiré le 29 octobre 2026 : ne pas le remettre) sur fond transparent (`public/brand/*-blanc.png`, tirés des fichiers couleur fournis : si les facultés envoient leurs propres versions blanches, les remplacer). À mettre à jour
     chaque année (republication de la plaquette).
   - Actualités : case « à la une » (`Article.aLaUne`, grand format en tête) et archive paginée par année.
   - Bureau : frise animée (`src/components/bureau/frise-bureau.tsx`). **Fonctions et pôles = étiquettes créées en
@@ -262,6 +262,18 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   `/admin/formations-complementaires` (menu Listes : « À reclasser », rangement réservé aux administrateurs avec note à la personne ;
   « Regroupements » : renommer, réunir deux écritures), outils `src/lib/detection-complementaires.ts`, script
   `npm run complementaires:detecter` (simulation, `-- --confirmer`). Tuile du tableau de bord quand il y a des formations à reclasser.
+- **Simulateur de moyenne (29 octobre 2026, choix de Guillaume ; maquette `../maquettes/simulateur-moyenne.html`)** :
+  page `/espace/simulateur` (entrée directe du menu, avant « Mon profil », ouverte à TOUS les comptes, en attente compris :
+  `exigerCompte()`, pas de `restreint`). Données et calculs sans dépendance serveur dans `src/lib/mcc.ts`, tirés du MCC
+  2025-2026 de l'UM (version non définitive) : **à mettre à jour chaque année** (codes du MCC = clés de saisie). Coefficient
+  d'une UE = ses crédits (30 par semestre), sous-éléments CM/TD pondérés par les coefficients du MCC, option au choix du S5,
+  compensation entre les deux semestres de l'année ; points bonus des options facultatives SAISIS par l'étudiant (plafond 3,
+  10 pour l'engagement) et ajoutés au total des points (3 points = +0,1). Moyennes indicatives Économie / Science politique
+  (composante d'après le code : `DA…` = science politique, `EAL…` = économie ; anglais, informatique, Grand Oral et projet
+  personnel communs, exclus avec les bonus). Année affichée à l'ouverture = celle de l'étudiant (`anneeParDefaut`, promotion
+  de la fiche ou du compte ; L1 par défaut), vue « deux semestres » ou un seul. Notes gardées UNIQUEMENT dans le navigateur
+  (`localStorage`, clé `abm:simulateur-moyenne:v1`, composant `src/components/simulateur/simulateur-moyenne.tsx`) : rien en
+  base. Non simulés : seconde chance, détail des notes de CC. Tests : `npx tsx scripts/tester-mcc.ts`.
 - Patchs de l'administration (PATCHS.md, partie 3, appliqués le 4 octobre 2026) :
   - Rôles (ADM-01) : voir « Authentification » ci-dessus. Page `/admin/comptes` : boutons selon
     `peutChangerRole` ; « Lien de mot de passe » envoie un lien de réinitialisation (le bureau ne voit

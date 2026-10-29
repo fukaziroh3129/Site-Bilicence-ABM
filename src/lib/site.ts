@@ -116,6 +116,8 @@ export const navigationMembres: EntreeMenu[] = [
       },
     ],
   },
+  // Ouvert aussi aux comptes en attente (aucune donnée des autres membres).
+  { href: "/espace/simulateur", label: "Simulateur de moyenne", icone: "simulateur" },
   {
     label: "Mon profil",
     liens: [

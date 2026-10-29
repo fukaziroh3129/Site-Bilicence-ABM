@@ -105,6 +105,9 @@ async function AccueilEnAttente({ prenom, personneId, personnel }: { prenom: str
             </button>
           </form>
         )}
+        <Link href="/espace/simulateur" className={`text-sm ${classeLien}`}>
+          Simuler ma moyenne
+        </Link>
         <Link href="/espace/compte" className={`text-sm ${classeLien}`}>
           Gérer mon compte
         </Link>
