@@ -17,7 +17,7 @@ export default function Confidentialite() {
     <PageLegale
       titre="Politique de confidentialité"
       intro="Ce que nous collectons, pourquoi, qui y a accès et combien de temps, conformément au Règlement général sur la protection des données (RGPD)."
-      miseAJour={new Date("2026-10-05T12:00:00Z")}
+      miseAJour={new Date("2026-11-04T12:00:00Z")}
       sections={[
         {
           id: "responsable",
@@ -40,8 +40,8 @@ export default function Confidentialite() {
                 ["Compte du personnel de l’université", "Prénom, nom, adresse e-mail, fonction (enseignant, responsable de la formation, direction, administration…), mot de passe (chiffré), rôle et statut du compte. Ces comptes n’ont pas de fiche : ils n’apparaissent ni dans l’annuaire ni sur le site public."],
                 ["Fiche", "Situation actuelle, ville, domaines, présentation, conseil aux étudiants, formations suivies, séjours Erasmus (université, période, descriptif, retour d’expérience), expériences (structure, poste, dates, missions, façon dont le stage a été obtenu, rapport de stage en PDF)."],
                 ["Contact d’un stage", "Si vous choisissez de le partager : fonction et organisme de la personne qui vous a aidé à obtenir le stage ; son nom et son moyen de contact seulement si vous déclarez avoir son accord."],
-                ["Coordonnées facultatives", "Profil LinkedIn, e-mail de contact, téléphone : affichés aux membres uniquement si vous l’avez choisi."],
-                ["Historique de l’association", "Pour les anciens n’ayant pas encore créé de compte : prénom, nom, promotion, master suivi et, le cas échéant, e-mail, téléphone et ville, repris du fichier de suivi tenu par le bureau."],
+                ["Coordonnées facultatives", "Profil LinkedIn, e-mail de contact, téléphone : jamais publics. L’e-mail de contact est affiché par défaut aux membres connectés (vous pouvez le masquer à tout moment dans « Ma fiche ») ; le profil LinkedIn et le téléphone, uniquement si vous l’avez choisi."],
+                ["Historique de l’association", "Pour les anciens n’ayant pas encore créé de compte : prénom, nom, promotion, master suivi et, le cas échéant, e-mail, téléphone et ville, repris du fichier de suivi tenu par le bureau. L’e-mail est visible des seuls membres connectés (jamais du public) ; le téléphone, jamais."],
                 ["Offres et contenus", "Offres de stage ou d’emploi que vous proposez ; pour les membres du bureau, nom, rôle et photo affichés sur la page Bureau."],
                 ["Messages de contact", "Nom, e-mail et message envoyés par le formulaire de contact : transmis par e-mail au bureau, jamais enregistrés sur le site."],
                 ["Données techniques", "Adresse IP et navigateur associés à vos sessions de connexion, utilisés pour la sécurité."],
@@ -58,13 +58,15 @@ export default function Confidentialite() {
                 Pour les anciens qui n’ont pas encore de compte, le bureau a repris les informations du fichier de suivi des
                 poursuites d’études de la bi-licence et de la liste de ses adhérents (prénom, nom, promotion, master suivi,
                 séjour Erasmus et, le cas échéant, e-mail, téléphone et ville). Ces fiches sont visibles des seuls membres
-                connectés, jamais du public sans votre accord.
+                connectés, jamais du public sans votre accord. Votre adresse e-mail y est affichée aux membres connectés, pour
+                qu’ils puissent vous contacter dans le cadre du réseau ; votre téléphone, jamais.
               </p>
               <p>
                 Base légale : l’intérêt légitime de l’association à faire vivre le réseau de ses anciens (article 6.1.f du RGPD).
                 Les personnes dont nous connaissons l’adresse e-mail reçoivent une invitation qui le leur explique. Vous pouvez à
                 tout moment vous opposer à la présence de votre fiche, la faire corriger ou supprimer, sans avoir à créer de
-                compte : écrivez à {contact} (objet « Mes données personnelles »).
+                compte : écrivez à {contact} (objet « Mes données personnelles »). Vous pouvez aussi simplement demander que votre
+                adresse e-mail soit masquée.
               </p>
             </>
           ),
@@ -77,7 +79,7 @@ export default function Confidentialite() {
               entetes={["Pourquoi", "Sur quelle base (article 6 du RGPD)"]}
               lignes={[
                 ["Créer et gérer votre compte, valider l’adhésion au réseau", "Exécution de la relation entre vous et l’association (6.1.b)"],
-                ["Annuaire et archive des stages réservés aux membres", "Intérêt légitime de l’association à faire vivre le réseau de ses anciens (6.1.f) ; vous choisissez quelles coordonnées sont visibles"],
+                ["Annuaire et archive des stages réservés aux membres", "Intérêt légitime de l’association à faire vivre le réseau de ses anciens (6.1.f) : votre e-mail de contact est visible des membres par défaut, et vous pouvez vous y opposer en le masquant à tout moment ; vous choisissez si votre profil LinkedIn et votre téléphone sont visibles"],
                 ["Page publique « Que sont-ils devenus ? »", "Votre consentement (6.1.a), que vous pouvez retirer à tout moment"],
                 ["E-mails de service (confirmation, mot de passe, compte validé, nouvelles offres)", "Exécution de la relation (6.1.b) et intérêt légitime (6.1.f)"],
                 ["Sécurité du site (sessions, limitation des tentatives de connexion)", "Intérêt légitime (6.1.f)"],
@@ -94,7 +96,7 @@ export default function Confidentialite() {
                 entetes={["Qui", "Ce qui est visible"]}
                 lignes={[
                   ["Le public (sans compte)", "Uniquement si vous l’avez accepté : prénom, nom, promotion, situation, poste ou formation actuelle et structure, ville, domaines, formations, présentation, conseil, Erasmus (université, pays, période, descriptif) et expériences (type, poste, structure, résumé). La carte publique des Erasmus n’affiche que des chiffres anonymes (pays, université, nombre de départs), calculés sur toutes les fiches. Jamais vos coordonnées, le détail de vos stages, vos rapports ni vos contacts."],
-                  ["Les membres connectés (comptes validés)", "Votre fiche (situation, formations, stages, domaines) et les seules coordonnées que vous avez rendues visibles ; le contact et le rapport d’un stage seulement si vous avez choisi de les partager. Tant que votre compte n’est pas validé, votre fiche n’est visible de personne d’autre que le bureau."],
+                  ["Les membres connectés (comptes validés)", "Votre fiche (situation, formations, stages, domaines), votre e-mail de contact (sauf si vous l’avez masqué) et les autres coordonnées que vous avez rendues visibles ; le contact et le rapport d’un stage seulement si vous avez choisi de les partager. Tant que votre compte n’est pas validé, votre fiche n’est visible de personne d’autre que le bureau."],
                   ["Le bureau (administrateurs)", "L’ensemble des données, pour valider les comptes, modérer les offres et tenir les fiches à jour."],
                 ]}
               />
@@ -163,7 +165,8 @@ export default function Confidentialite() {
               <p>
                 Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition et de
                 portabilité de vos données, ainsi que du droit de retirer votre consentement à tout moment et de définir
-                des directives sur le sort de vos données après votre décès.
+                des directives sur le sort de vos données après votre décès. Le droit d’opposition comprend celui de masquer
+                votre e-mail de contact aux autres membres (case « Visible des membres » de « Ma fiche », effet immédiat).
               </p>
               <p>
                 La plupart s’exercent directement depuis votre espace : voir la page{" "}

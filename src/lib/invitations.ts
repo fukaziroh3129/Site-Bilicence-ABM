@@ -77,7 +77,7 @@ export async function envoyerInvitation(userId: string) {
   const accroche = "En bref : placez votre marque dans la Bi-Licence !";
   const bouton = { libelle: "Activer mon compte", url: lien };
   const noteBouton = `Lien valable ${DUREE_JOURS} jours · vous y choisirez votre mot de passe`;
-  const confidentialite = "Votre fiche est visible uniquement des membres connectés ; elle n’apparaît sur les pages publiques que si vous l’acceptez. Une fois connecté, vous pouvez la modifier ou la compléter (« Ma fiche »), ou supprimer votre compte et vos données (« Mon compte »).";
+  const confidentialite = "Votre fiche est visible uniquement des membres connectés, avec votre adresse e-mail (vous pouvez la masquer dans « Ma fiche ») ; elle n’apparaît sur les pages publiques que si vous l’acceptez. Une fois connecté, vous pouvez la modifier ou la compléter (« Ma fiche »), ou supprimer votre compte et vos données (« Mon compte »).";
   const signature = `Le bureau d’${site.nom}`;
 
   await envoyerEmail({

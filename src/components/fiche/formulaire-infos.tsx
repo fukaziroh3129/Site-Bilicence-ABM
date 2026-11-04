@@ -120,7 +120,7 @@ export function FormulaireInfos({
         <legend className="eyebrow text-bordeaux-500">Contacts</legend>
         <p className="text-sm text-ink-soft">
           Ces coordonnées ne sont jamais publiques. Cochez celles que les membres connectés peuvent voir
-          dans l’annuaire.
+          dans l’annuaire. L’e-mail est visible des membres par défaut : décochez-le pour le masquer.
         </p>
         <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
           <Champ nom="linkedin" libelle="Profil LinkedIn" type="url" placeholder="https://www.linkedin.com/in/…" defaultValue={personne.linkedin} etat={etat} />

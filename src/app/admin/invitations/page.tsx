@@ -30,7 +30,7 @@ export default async function PreComptes() {
           <div className="space-y-2">
             <p>
               Créez à l’avance le compte des anciens connus (bases de master) : leur fiche existe tout de suite, visible des
-              membres connectés. Envoyez-leur ensuite le lien d’invitation : la personne confirme son adresse, choisit son mot
+              membres connectés (avec leur e-mail, sauf s’ils le masquent ensuite). Envoyez-leur ensuite le lien d’invitation : la personne confirme son adresse, choisit son mot
               de passe et retrouve sa fiche déjà commencée. Son compte est alors actif (vous l’avez déjà validé en l’important).
             </p>
             <p className="text-sm">

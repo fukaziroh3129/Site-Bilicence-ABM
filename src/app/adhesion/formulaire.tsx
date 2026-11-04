@@ -188,6 +188,8 @@ export function EspaceAdhesion() {
                   etat={etat}
                 />
                 <p className="text-xs text-ink-soft">
+                  Étudiants et anciens : votre adresse e-mail sera visible des membres connectés (jamais du public) ; vous
+                  pourrez la masquer à tout moment dans « Ma fiche ».{" "}
                   <Link href="/confidentialite" className={classeLien} target="_blank">
                     Lire la politique de confidentialité
                   </Link>

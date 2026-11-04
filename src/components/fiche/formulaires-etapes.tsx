@@ -71,7 +71,7 @@ export function EtapeIdentite({ personne }: { personne: Personne }) {
             <legend className="eyebrow text-bordeaux-500">Contacts</legend>
             <p className="text-sm text-ink-soft">
               Jamais publics. Activez « Visible des membres » pour les coordonnées que les membres connectés peuvent voir dans
-              l’annuaire.
+              l’annuaire. L’e-mail est visible des membres par défaut : décochez-le pour le masquer.
             </p>
             <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
               <Champ nom="linkedin" libelle="Profil LinkedIn" type="url" placeholder="https://www.linkedin.com/in/…" defaultValue={personne.linkedin} etat={etat} />

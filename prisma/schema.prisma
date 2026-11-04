@@ -170,12 +170,13 @@ model Personne {
   presentation      String? // une ou deux phrases, affichées sur la carte publique
   conseil           String? // conseil aux étudiants de la bi-licence, au verso de la carte
 
-  // Contacts, visibles par les membres connectés uniquement si la personne l'a choisi
+  // Contacts, visibles par les membres connectés uniquement si la personne l'a choisi (sauf l'e-mail,
+  // visible par défaut tant que la personne ne le décoche pas)
   linkedin          String?
   emailContact      String?
   telephone         String?
   afficherLinkedin  Boolean @default(false)
-  afficherEmail     Boolean @default(false)
+  afficherEmail     Boolean @default(true) // visible des membres par défaut (4 novembre 2026) : la personne peut le décocher
   afficherTelephone Boolean @default(false)
 
   // « Je n'ai pas encore fait de stage / d'Erasmus » : l'étape compte comme remplie. Remis à faux dès

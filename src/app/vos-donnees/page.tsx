@@ -21,7 +21,7 @@ const droits = [
   {
     icone: PenLine,
     titre: "Les corriger",
-    texte: "Modifier à tout moment votre situation, vos formations, vos stages et vos coordonnées.",
+    texte: "Modifier à tout moment votre situation, vos formations, vos stages et vos coordonnées, ou masquer votre e-mail, visible des membres par défaut.",
     action: { href: "/espace/ma-fiche", libelle: "Modifier ma fiche" },
   },
   {
@@ -80,8 +80,9 @@ export default function VosDonnees() {
             <Mail size={22} strokeWidth={1.5} aria-hidden className="text-white/80" />
             <h2 className="mt-4 font-display text-xl font-bold">Pas de compte&nbsp;?</h2>
             <p className="mt-2 flex-1 text-sm text-white/80">
-              Vous figurez peut-être dans l’annuaire grâce au fichier historique de l’association. Pour consulter,
-              corriger ou supprimer ces informations, écrivez-nous.
+              Vous figurez peut-être dans l’annuaire grâce au fichier historique de l’association, avec votre e-mail visible
+              des membres connectés. Pour consulter, corriger ou supprimer ces informations, ou masquer votre e-mail,
+              écrivez-nous.
             </p>
             <p className="mt-5 text-sm font-semibold">
               {email ? (
@@ -106,8 +107,9 @@ export default function VosDonnees() {
             lignes={[
               ["Nom, promotion, formations, situation", "Seulement avec votre accord", "Oui", "Oui"],
               ["Stages et retours d’expérience", "Non", "Oui", "Oui"],
-              ["E-mail, téléphone, LinkedIn", "Jamais", "Seulement ceux que vous cochez", "Oui"],
-              ["Adresse e-mail de connexion", "Jamais", "Jamais", "Oui"],
+              ["E-mail de contact", "Jamais", "Oui, sauf si vous le masquez", "Oui"],
+              ["Téléphone, LinkedIn", "Jamais", "Seulement ceux que vous cochez", "Oui"],
+              ["Adresse e-mail de connexion", "Jamais", "Seulement si c’est aussi votre e-mail de contact (le cas par défaut)", "Oui"],
             ]}
           />
           <p className="flex items-start gap-3 text-sm text-ink-soft">

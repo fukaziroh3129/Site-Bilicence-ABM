@@ -24,7 +24,7 @@ type PersonneComplete = Personne & {
 };
 
 const INTRODUCTIONS: Record<EtapeFiche, string> = {
-  identite: "Commençons par l’essentiel. Vos coordonnées ne sont jamais publiques : vous choisissez celles que les membres connectés peuvent voir.",
+  identite: "Commençons par l’essentiel. Vos coordonnées ne sont jamais publiques : vous choisissez celles que les membres connectés peuvent voir (votre e-mail l’est par défaut).",
   aujourdhui: "Ce que vous faites en ce moment : c’est la première chose que regardent les étudiants.",
   etudes: "Votre parcours d’études après la bi-licence, et tout ce que vous avez suivi à côté : diplômes universitaires, autre licence, certifications, MOOC.",
   experiences:

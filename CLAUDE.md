@@ -87,7 +87,11 @@ Rester minimaliste : peu de sections, mais faciles à alimenter régulièrement.
   inscriptions non confirmées après 30 jours (engagement de la politique de confidentialité).
 - Modèle de données : une fiche `Personne` existe indépendamment d'un compte (personnes
   importées de l'Excel ou saisies par le bureau) ; un compte se rattache à une fiche.
-- Contacts dans l'annuaire : chaque membre choisit, champ par champ, ce qu'il affiche.
+- Contacts dans l'annuaire : chaque membre choisit, champ par champ, ce qu'il affiche. **L'e-mail de contact est visible
+  des membres connectés PAR DÉFAUT (4 novembre 2026, choix de Guillaume)** : `Personne.afficherEmail` vaut vrai par défaut,
+  la personne le décoche dans « Ma fiche » ; la migration `email_visible_par_defaut` l'a mis à vrai pour les fiches sans
+  compte et les pré-comptes INVITE (les comptes déjà créés gardent leur choix). LinkedIn et téléphone restent à cocher.
+  Jamais public (pages sans compte).
 - Polices : chargées via `next/font` dans `src/app/layout.tsx` (auto-hébergées, pas d'appel
   à Google côté visiteur) ; `typography.css` référence leurs variables.
 - Liens externes (HelloAsso, Instagram), mandat du bureau, menus : `src/lib/site.ts`.
